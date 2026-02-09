@@ -10,7 +10,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=/api # Use relative path for proxying
     depends_on:
       - backend
 
@@ -47,14 +47,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: duckdns
-    environment:
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN} # e.g. unitopms
-      - TOKEN=${DUCKDNS_TOKEN}
-      - LOG_FILE=false
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
     restart: unless-stopped
+    command: "http frontend:3000"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - 4040:4040
+    depends_on:
+      - frontend
 
 volumes:
   postgres_data:
