@@ -1,38 +1,48 @@
-# Ugreen NAS Deployment Guide
+# UnitoPMS
 
-This project is configured to be deployed on your Ugreen NAS 4300 Plus using Portainer.
+[![CI/CD Pipeline](https://github.com/Aliha103/advance_unitopms/actions/workflows/deploy.yml/badge.svg)](https://github.com/Aliha103/advance_unitopms/actions/workflows/deploy.yml)
 
-## Prerequisites
+🌍 **Live:** [https://unitopms.com](https://unitopms.com)
 
-1.  **Git Repository**: This code must be hosted on a Git repository (e.g., GitHub).
-2.  **Portainer**: Installed and running on your Ugreen NAS (usually at `http://192.168.0.122:9000`).
+## Architecture
 
-## Deployment Steps
+| Service | Technology | Port |
+| :--- | :--- | :--- |
+| Frontend | Next.js 16 | 3000 |
+| Backend | Django 4.2 + Gunicorn | 8000 |
+| Database | PostgreSQL 15 | 5432 |
+| Cache/Broker | Redis 7 | 6379 |
+| Task Worker | Celery | — |
+| Task Scheduler | Celery Beat | — |
+| Tunnel | Cloudflare Tunnel | — |
 
-1.  **Push Code to GitHub**:
-    Ensure all your latest changes are pushed to your GitHub repository.
+## Auto-Deploy Setup (Portainer)
 
-2.  **Open Portainer**:
-    Navigate to `http://192.168.0.122:9000` in your browser.
+### First-Time Setup
 
-3.  **Create a New Stack**:
-    *   Go to **Stacks** > **Add stack**.
-    *   Name your stack (e.g., `ugreen-web`).
-    *   Select **Repository** as the build method.
-    *   **Repository URL**: Enter the URL of your GitHub repository (e.g., `https://github.com/yourusername/advance_unitopms.git`).
-    *   **Repository Reference**: `refs/heads/main` (or `master`).
-    *   **Compose path**: `docker-compose.yml`.
-    *   **Automatic Updates**: Enable this to allow Portainer to poll for changes.
-        *   **Fetch interval**: `5m` (or as desired).
+1. Open Portainer (`http://192.168.0.122:9000`)
+2. Go to **Stacks** → **Add stack**
+3. Name: `unitopms`
+4. Select **Repository**
+5. **Repository URL**: `https://github.com/Aliha103/advance_unitopms`
+6. **Reference**: `refs/heads/main`
+7. **Compose path**: `docker-compose.yml`
+8. Enable **Automatic updates** → **Polling** → Interval: `5m`
+9. Add environment variable: `CLOUDFLARED_TOKEN` = your token
+10. Click **Deploy the stack**
 
-4.  **Deploy**:
-    Click **Deploy the stack**.
+### How It Works
 
-## Automatic Updates
+```
+Push to GitHub → GitHub Actions validates build → Portainer detects change (≤5 min) → Auto-rebuild & deploy
+```
 
-Once set up, any change you push to the `main` branch on GitHub will be automatically detected by Portainer (within the fetch interval), and your application on the NAS will be updated.
+## Local Development
 
-## Accessing the App
+```bash
+docker compose up --build
+```
 
-After deployment, your app should be available at:
-`http://192.168.0.122:8080`
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- Admin: http://localhost:8000/admin
