@@ -47,17 +47,5 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok
-    restart: unless-stopped
-    command: "http nextjs_frontend:3000 --log stdout"
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    ports:
-      - 4040:4040
-    depends_on:
-      - frontend
-
 volumes:
   postgres_data:
