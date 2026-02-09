@@ -1,7 +1,30 @@
-export default function HomePage() {
+"use client";
+
+import { Navbar } from "@/components/navbar";
+import {
+  HeroSection,
+  StatsSection,
+  TestimonialsSection,
+  ComparisonSection,
+  FeaturesSection,
+  CtaSection,
+  Footer,
+} from "@/components/landing";
+import { LanguageProvider } from "@/contexts/language-context";
+
+export default function LandingPage() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '2rem' }}>
-      <h1>Hello from UnitoPMS! 🎉</h1>
-    </div>
+    <LanguageProvider>
+      <div className="min-h-screen bg-white overflow-x-hidden min-w-0 pb-safe">
+        <Navbar />
+        <HeroSection />
+        <StatsSection />
+        <TestimonialsSection />
+        <ComparisonSection />
+        <FeaturesSection />
+        <CtaSection />
+        <Footer />
+      </div>
+    </LanguageProvider>
   );
 }
