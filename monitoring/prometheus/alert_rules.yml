@@ -1,0 +1,58 @@
+groups:
+  - name: system_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for 5 minutes (current: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for 5 minutes (current: {{ $value }}%)"
+
+      - alert: DiskSpaceRunningLow
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space running low"
+          description: "Disk usage on / is above 85% (current: {{ $value }}%)"
+
+  - name: service_alerts
+    rules:
+      - alert: DjangoHighResponseTime
+        expr: rate(django_http_requests_latency_seconds_by_view_method_sum[5m]) / rate(django_http_requests_latency_seconds_by_view_method_count[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Django high response time"
+          description: "Average response time is above 2 seconds"
+
+      - alert: DjangoHighErrorRate
+        expr: rate(django_http_responses_total_by_status_view_method{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Django high 5xx error rate"
+          description: "More than 0.1 5xx errors per second for 5 minutes"
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is unreachable"
