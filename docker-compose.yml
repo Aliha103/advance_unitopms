@@ -47,5 +47,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
+
 volumes:
   postgres_data:
