@@ -51,7 +51,7 @@ services:
     image: ngrok/ngrok:latest
     container_name: ngrok
     restart: unless-stopped
-    command: "http frontend:3000"
+    command: "http nextjs_frontend:3000 --log stdout"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     ports:
