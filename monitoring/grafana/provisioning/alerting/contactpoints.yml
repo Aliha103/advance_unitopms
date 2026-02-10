@@ -1,12 +1,4 @@
+# Contact points are configured via the Grafana UI
+# Discord notifications are handled by GitHub Actions CI/CD
 apiVersion: 1
-
-contactPoints:
-  - orgId: 1
-    name: Discord
-    receivers:
-      - uid: discord-webhook
-        type: discord
-        settings:
-          url: ${DISCORD_WEBHOOK_URL}
-          use_discord_username: true
-        disableResolveMessage: false
+contactPoints: []
