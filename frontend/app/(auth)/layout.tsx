@@ -1,5 +1,4 @@
 import { Navbar } from "@/components/navbar";
-import { LanguageProvider } from "@/contexts/language-context";
 
 export default function AuthLayout({
   children,
@@ -7,9 +6,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <LanguageProvider>
+    <>
       <Navbar />
       {children}
-    </LanguageProvider>
+    </>
   );
 }

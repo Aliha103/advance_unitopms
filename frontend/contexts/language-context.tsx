@@ -26,27 +26,27 @@ const translations = {
     hero_feature_3: "Cancel anytime",
 
     // Stats
-    stats_subtitle: "Trusted by Professionals",
-    stats_title: "Built for Scale",
-    stats_description: "Join thousands of property managers who trust UnitoPMS to power their business.",
-    stats_time_label: "Efficiency Boost",
-    stats_time_sub: "Average time saved per booking",
-    stats_checkin_label: "Revenue Growth",
-    stats_checkin_sub: "Average increase in first year",
-    stats_uptime_label: "Uptime",
+    stats_subtitle: "Why Professionals Choose Us",
+    stats_title: "Great People Use UnitoPMS",
+    stats_description: "Forward-thinking hoteliers and property managers trust UnitoPMS to transform their operations.",
+    stats_time_label: "Less Time on Admin",
+    stats_time_sub: "Average time saved on daily operations",
+    stats_checkin_label: "Faster Check-ins",
+    stats_checkin_sub: "Streamlined guest processing",
+    stats_uptime_label: "Uptime Guarantee",
     stats_uptime_sub: "Enterprise-grade reliability",
-    stats_support_label: "Support",
-    stats_support_sub: "Dedicated customer success team",
+    stats_support_label: "Human Support",
+    stats_support_sub: "Real experts, not just bots",
 
     // Comparison
-    comparison_badge: "Why Switch?",
-    comparison_title: "Modern vs Legacy",
-    comparison_description: "See how UnitoPMS compares to traditional spreadsheet-based management.",
+    comparison_badge: "The Old Way is Broken",
+    comparison_title: "Stop Managing Properties the Hard Way",
+    comparison_description: "Spreadsheets, manual processes, and scattered tools are costing you time and revenue. There's a better way.",
 
     // Testimonials
-    testimonials_subtitle: "Success Stories",
-    testimonials_title: "Loved by Hosts",
-    testimonials_description: "Don't just take our word for it. Hear from property managers who have transformed their business.",
+    testimonials_subtitle: "Trusted by Leaders",
+    testimonials_title: "What Hoteliers Say",
+    testimonials_description: "Join thousands of property managers who have transformed their business with UnitoPMS.",
   },
   // Placeholder for other languages - falling back to English for now
   es: {},

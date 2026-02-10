@@ -102,7 +102,7 @@ function StatCard({
 export function StatsSection() {
   const t = useTranslations();
   return (
-    <section className="py-16 sm:py-24 bg-white relative overflow-hidden">
+    <section className="pt-16 pb-4 sm:pt-24 sm:pb-6 bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:20px_20px] opacity-50" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
