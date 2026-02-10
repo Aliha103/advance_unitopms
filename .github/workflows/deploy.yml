@@ -63,6 +63,17 @@ jobs:
     needs: [docker-build]
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
+      - uses: actions/checkout@v4
+        if: needs.docker-build.result == 'success'
+
+      - name: Create deployment tag
+        if: needs.docker-build.result == 'success'
+        run: |
+          DEPLOY_TAG="deploy-$(date +'%Y%m%d-%H%M%S')"
+          git tag $DEPLOY_TAG
+          git push origin $DEPLOY_TAG
+          echo "DEPLOY_TAG=$DEPLOY_TAG" >> $GITHUB_ENV
+
       - name: Deploy Success Notification
         if: needs.docker-build.result == 'success'
         env:
@@ -70,10 +81,10 @@ jobs:
         run: |
           if [ -n "$DISCORD_WEBHOOK" ]; then
             curl -H "Content-Type: application/json" \
-              -d "{\"embeds\":[{\"title\":\"✅ Deploy Successful\",\"description\":\"**UnitoPMS** build passed! Portainer will auto-deploy shortly.\",\"color\":5763719,\"fields\":[{\"name\":\"Commit\",\"value\":\"\`${GITHUB_SHA::7}\`\",\"inline\":true},{\"name\":\"Author\",\"value\":\"${{ github.actor }}\",\"inline\":true},{\"name\":\"Site\",\"value\":\"[unitopms.com](https://unitopms.com)\",\"inline\":true}]}]}" \
+              -d "{\"embeds\":[{\"title\":\"✅ Deploy Successful\",\"description\":\"**UnitoPMS** build passed! Portainer will auto-deploy shortly.\",\"color\":5763719,\"fields\":[{\"name\":\"Commit\",\"value\":\"\`${GITHUB_SHA::7}\`\",\"inline\":true},{\"name\":\"Tag\",\"value\":\"\`${DEPLOY_TAG}\`\",\"inline\":true},{\"name\":\"Author\",\"value\":\"${{ github.actor }}\",\"inline\":true},{\"name\":\"Site\",\"value\":\"[unitopms.com](https://unitopms.com)\",\"inline\":true}]}]}" \
               "$DISCORD_WEBHOOK"
           fi
-          echo "✅ All builds passed! Portainer will auto-deploy."
+          echo "✅ All builds passed! Tagged as ${DEPLOY_TAG}"
 
       - name: Deploy Failure Notification
         if: needs.docker-build.result == 'failure'
@@ -86,3 +97,4 @@ jobs:
               "$DISCORD_WEBHOOK"
           fi
           echo "❌ Build failed!"
+
