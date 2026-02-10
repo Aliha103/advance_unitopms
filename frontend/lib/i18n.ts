@@ -1,5 +1,6 @@
 export const LANGUAGE_OPTIONS = [
   { code: "en", label: "English" },
+  { code: "it", label: "Italiano" },
   { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
   { code: "de", label: "Deutsch" },
