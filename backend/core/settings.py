@@ -31,6 +31,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.RequestLoggingMiddleware',
+    'core.middleware.AuditMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
@@ -144,11 +146,19 @@ LOGGING = {
             'format': '{asctime} {levelname} {name} {message}',
             'style': '{',
         },
+        'json': {
+            'format': '{asctime} {levelname} {name} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+        },
+        'audit_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
         },
     },
     'root': {
@@ -164,6 +174,16 @@ LOGGING = {
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING' if not DEBUG else 'DEBUG',
+            'propagate': False,
+        },
+        'audit': {
+            'handlers': ['audit_console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
