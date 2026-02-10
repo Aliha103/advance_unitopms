@@ -17,6 +17,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - backend
 
@@ -29,12 +34,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEBUG=1
-      - SECRET_KEY=django-insecure-change-me-in-production
-      - ALLOWED_HOSTS=*
-      - DATABASE_NAME=postgres
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - DATABASE_NAME=${DATABASE_NAME:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -44,6 +49,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       db:
         condition: service_healthy
@@ -83,6 +93,7 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "16379:6379"
     volumes:
@@ -93,6 +104,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   celery_worker:
     build:
@@ -102,12 +118,12 @@ services:
     restart: always
     command: celery -A core worker --loglevel=info
     environment:
-      - DEBUG=1
-      - SECRET_KEY=django-insecure-change-me-in-production
-      - ALLOWED_HOSTS=*
-      - DATABASE_NAME=postgres
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - DATABASE_NAME=${DATABASE_NAME:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -118,6 +134,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       db:
         condition: service_healthy
@@ -132,16 +153,21 @@ services:
     restart: always
     command: celery -A core beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - DEBUG=1
-      - SECRET_KEY=django-insecure-change-me-in-production
-      - ALLOWED_HOSTS=*
-      - DATABASE_NAME=postgres
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - DATABASE_NAME=${DATABASE_NAME:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       db:
         condition: service_healthy
