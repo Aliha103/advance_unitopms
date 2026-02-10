@@ -128,6 +128,12 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE = {
+    'daily-database-backup': {
+        'task': 'core.backup_database',
+        'schedule': 86400.0,  # Every 24 hours (seconds)
+    },
+}
 
 # Logging
 LOGGING = {

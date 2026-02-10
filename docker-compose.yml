@@ -54,6 +54,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    volumes:
+      - backup_data:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -139,6 +141,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    volumes:
+      - backup_data:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -238,3 +242,4 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  backup_data:
