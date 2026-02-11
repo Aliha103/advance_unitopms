@@ -14,15 +14,15 @@ export function DashboardTopbar({
   onToggleSidebar: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/80">
-      <header className="h-14 w-full">
+    <div className="sticky top-0 z-50 bg-white border-b border-gray-200/60 shadow-sm shadow-gray-100/50">
+      <header className="h-16 w-full">
         <div className="flex items-center justify-between h-full px-4 lg:px-6">
-          {/* ─── LEFT: Mobile toggle + Logo + Breadcrumbs ─── */}
+          {/* ─── LEFT: Mobile toggle + Logo ─── */}
           <div className="flex items-center gap-3 min-w-0">
             {/* Mobile sidebar toggle */}
             <button
               type="button"
-              className="lg:hidden p-1.5 -ml-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
               onClick={onToggleSidebar}
               aria-label="Toggle sidebar"
             >
@@ -31,7 +31,7 @@ export function DashboardTopbar({
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth={1.5}
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
@@ -41,15 +41,21 @@ export function DashboardTopbar({
               </svg>
             </button>
 
-            {/* Logo only — no text */}
-            <Link href="/dashboard" className="shrink-0">
+            {/* Logo */}
+            <Link
+              href="/dashboard"
+              className="shrink-0 flex items-center gap-2.5 group"
+            >
               <Image
                 src="/assets/logo.png"
                 alt="UnitoPMS"
-                width={30}
-                height={30}
-                className="rounded-lg"
+                width={36}
+                height={36}
+                className="rounded-xl shadow-sm ring-1 ring-gray-200/50 group-hover:shadow-md transition-shadow"
               />
+              <span className="hidden lg:block text-[15px] font-semibold text-gray-900 tracking-tight">
+                UnitoPMS
+              </span>
             </Link>
           </div>
 
@@ -57,11 +63,11 @@ export function DashboardTopbar({
           <TopbarSearch />
 
           {/* ─── RIGHT: Actions ─── */}
-          <div className="flex items-center gap-1 lg:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
             {/* Mobile search trigger */}
             <button
               type="button"
-              className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              className="md:hidden w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
               aria-label="Search"
             >
               <svg
@@ -69,7 +75,7 @@ export function DashboardTopbar({
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth={1.5}
+                strokeWidth={2}
               >
                 <path
                   strokeLinecap="round"
@@ -83,7 +89,7 @@ export function DashboardTopbar({
             <TopbarNotifications />
 
             {/* Divider */}
-            <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
+            <div className="hidden lg:block h-7 w-px bg-gray-200/80 mx-1" />
 
             {/* Profile */}
             <TopbarProfile />
