@@ -528,9 +528,7 @@ export function Navbar() {
 
   const dashboardHref = useMemo(() => {
     if (!user) return "/login";
-    if (user.is_platform_admin) return SAFE_DASHBOARD_PATHS[0];
-    if (user.active_organization) return SAFE_DASHBOARD_PATHS[1];
-    return "/login";
+    return "/dashboard";
   }, [user]);
 
   // --- mount animation ---
