@@ -37,6 +37,7 @@ class HostProfile(models.Model):
         ACTIVE = 'active', _('Active')
         SUSPENDED = 'suspended', _('Suspended')
         DEACTIVATED = 'deactivated', _('Deactivated')
+        REJECTED = 'rejected', _('Rejected')
 
     class OnboardingStep(models.TextChoices):
         REGISTERED = 'registered', _('Registered')
@@ -185,6 +186,8 @@ class HostProfile(models.Model):
     )
     suspended_at = models.DateTimeField(null=True, blank=True)
     suspension_reason = models.TextField(blank=True)
+    rejection_reason = models.TextField(blank=True)
+    rejected_at = models.DateTimeField(null=True, blank=True)
     profile_photo = models.URLField(blank=True)
     bio = models.TextField(blank=True)
     notes = models.TextField(blank=True, help_text='Internal admin notes')

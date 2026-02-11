@@ -1,4 +1,10 @@
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,8 +13,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import HostProfile
 from .serializers import (
     HostApplicationSerializer,
+    HostApplicationListSerializer,
     HostProfileSerializer,
     HostProfileUpdateSerializer,
+    RejectApplicationSerializer,
+    SetPasswordSerializer,
 )
 
 User = get_user_model()
@@ -106,3 +115,181 @@ class HostProfileView(generics.RetrieveUpdateAPIView):
         if self.request.method in ('PUT', 'PATCH'):
             return HostProfileUpdateSerializer
         return HostProfileSerializer
+
+
+# ── Application Management (Admin) ──────────────────────────────────────────
+
+
+class ApplicationListView(generics.ListAPIView):
+    """
+    GET /api/auth/applications/
+    Admin-only. Returns all host applications.
+    Supports filtering via ?status=pending_review|approved|rejected
+    """
+    permission_classes = [permissions.IsAdminUser]
+    serializer_class = HostApplicationListSerializer
+
+    def get_queryset(self):
+        qs = HostProfile.objects.select_related('user').all()
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs.order_by('-created_at')
+
+
+class ApplicationApproveView(APIView):
+    """
+    POST /api/auth/applications/<id>/approve/
+    Admin-only. Approves a host application and returns a set-password URL.
+    Also works for already-approved applications (to re-generate the link).
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            profile = HostProfile.objects.select_related('user').get(pk=pk)
+        except HostProfile.DoesNotExist:
+            return Response(
+                {'message': 'Application not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if profile.status not in (
+            HostProfile.Status.PENDING_REVIEW,
+            HostProfile.Status.APPROVED,
+        ):
+            return Response(
+                {'message': f'Application is already {profile.status}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update profile status
+        profile.status = HostProfile.Status.APPROVED
+        profile.approved_at = timezone.now()
+        profile.approved_by = request.user
+        profile.save(update_fields=[
+            'status', 'approved_at', 'approved_by', 'updated_at',
+        ])
+
+        # Generate set-password token
+        user = profile.user
+        token_generator = PasswordResetTokenGenerator()
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = token_generator.make_token(user)
+
+        frontend_url = getattr(
+            django_settings, 'FRONTEND_URL', 'https://unitopms.com'
+        )
+        set_password_url = f'{frontend_url}/set-password?uid={uid}&token={token}'
+
+        return Response({
+            'message': 'Application approved.',
+            'set_password_url': set_password_url,
+            'email': user.email,
+            'full_name': user.full_name,
+        }, status=status.HTTP_200_OK)
+
+
+class ApplicationRejectView(APIView):
+    """
+    POST /api/auth/applications/<id>/reject/
+    Admin-only. Rejects a host application with optional reason.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            profile = HostProfile.objects.select_related('user').get(pk=pk)
+        except HostProfile.DoesNotExist:
+            return Response(
+                {'message': 'Application not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if profile.status != HostProfile.Status.PENDING_REVIEW:
+            return Response(
+                {'message': f'Application is already {profile.status}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RejectApplicationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        profile.status = HostProfile.Status.REJECTED
+        profile.rejection_reason = serializer.validated_data.get('reason', '')
+        profile.rejected_at = timezone.now()
+        profile.save(update_fields=[
+            'status', 'rejection_reason', 'rejected_at', 'updated_at',
+        ])
+
+        return Response(
+            {'message': 'Application rejected.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SetPasswordView(APIView):
+    """
+    POST /api/auth/set-password/
+    Public endpoint. Validates token, sets password, activates user account.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = SetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Decode UID
+        try:
+            uid = force_str(urlsafe_base64_decode(
+                serializer.validated_data['uid']
+            ))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response(
+                {'message': 'Invalid or expired link.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate token
+        token_generator = PasswordResetTokenGenerator()
+        if not token_generator.check_token(
+            user, serializer.validated_data['token']
+        ):
+            return Response(
+                {'message': 'Invalid or expired link.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate password strength
+        try:
+            validate_password(
+                serializer.validated_data['password'], user=user
+            )
+        except Exception as e:
+            return Response(
+                {'message': list(e.messages)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Set password and activate
+        user.set_password(serializer.validated_data['password'])
+        user.is_active = True
+        user.save(update_fields=['password', 'is_active'])
+
+        # Move host profile to ACTIVE
+        if hasattr(user, 'host_profile'):
+            profile = user.host_profile
+            if profile.status == HostProfile.Status.APPROVED:
+                profile.status = HostProfile.Status.ACTIVE
+                profile.onboarding_step = (
+                    HostProfile.OnboardingStep.EMAIL_VERIFIED
+                )
+                profile.save(update_fields=[
+                    'status', 'onboarding_step', 'updated_at',
+                ])
+
+        return Response(
+            {'message': 'Password set successfully. You can now log in.'},
+            status=status.HTTP_200_OK,
+        )

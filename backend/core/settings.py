@@ -96,6 +96,12 @@ APPEND_SLASH = False
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
+# Frontend URL for generating set-password links
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://unitopms.com')
+
+# Token validity for set-password links (7 days)
+PASSWORD_RESET_TIMEOUT = 604800
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

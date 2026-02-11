@@ -125,3 +125,53 @@ class HostProfileUpdateSerializer(serializers.ModelSerializer):
             'bio',
             'billing_email',
         ]
+
+
+class HostApplicationListSerializer(serializers.ModelSerializer):
+    """Read-only serializer for admin applications list."""
+    email = serializers.EmailField(source='user.email', read_only=True)
+    full_name = serializers.CharField(source='user.full_name', read_only=True)
+
+    class Meta:
+        model = HostProfile
+        fields = [
+            'id',
+            'email',
+            'full_name',
+            'company_name',
+            'country',
+            'country_name',
+            'phone',
+            'property_type',
+            'num_properties',
+            'num_units',
+            'referral_source',
+            'marketing_opt_in',
+            'status',
+            'notes',
+            'rejection_reason',
+            'rejected_at',
+            'created_at',
+            'approved_at',
+        ]
+        read_only_fields = fields
+
+
+class RejectApplicationSerializer(serializers.Serializer):
+    """Validates the rejection reason."""
+    reason = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    """Validates the set-password form submission."""
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=8)
+    password_confirm = serializers.CharField(min_length=8)
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError(
+                {'password_confirm': 'Passwords do not match.'}
+            )
+        return attrs
