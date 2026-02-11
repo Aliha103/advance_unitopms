@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
+import { HostSidebar } from "@/components/dashboard/host-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
 
 export default function DashboardLayout({
@@ -14,6 +15,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const isHost = user?.is_host ?? false;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -63,7 +66,7 @@ export default function DashboardLayout({
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
         >
-          <AdminSidebar />
+          {isHost ? <HostSidebar /> : <AdminSidebar />}
         </div>
 
         {/* Main content */}
