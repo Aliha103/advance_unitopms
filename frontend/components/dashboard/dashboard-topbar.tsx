@@ -44,18 +44,14 @@ export function DashboardTopbar({
             {/* Logo */}
             <Link
               href="/dashboard"
-              className="shrink-0 flex items-center gap-2.5 group"
+              className="shrink-0 flex items-center rounded-xl active:scale-[0.97] transition-transform duration-200"
+              aria-label="UnitoPMS Dashboard"
             >
-              <Image
+              <img
                 src="/assets/logo.png"
                 alt="UnitoPMS"
-                width={36}
-                height={36}
-                className="rounded-xl shadow-sm ring-1 ring-gray-200/50 group-hover:shadow-md transition-shadow"
+                className="h-8 sm:h-9 w-auto"
               />
-              <span className="hidden lg:block text-[15px] font-semibold text-gray-900 tracking-tight">
-                UnitoPMS
-              </span>
             </Link>
           </div>
 
