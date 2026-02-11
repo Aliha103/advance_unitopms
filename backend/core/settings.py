@@ -90,6 +90,10 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Disable APPEND_SLASH — Next.js rewrites strip trailing slashes,
+# and all API/admin URLs already define explicit trailing slashes in urls.py.
+APPEND_SLASH = False
+
 AUTH_USER_MODEL = 'users.CustomUser'
 
 REST_FRAMEWORK = {
