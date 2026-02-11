@@ -11,7 +11,9 @@ echo "PostgreSQL is up - continuing"
 
 # Apply database migrations
 echo "Applying database migrations..."
-python manage.py migrate --noinput
+if ! python manage.py migrate --noinput; then
+    echo "WARNING: migrate failed — attempting to continue (tables may already exist)"
+fi
 
 # Collect static files (optional but good for production)
 echo "Collecting static files..."

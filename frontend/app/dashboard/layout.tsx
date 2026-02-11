@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
@@ -12,6 +12,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -30,7 +31,7 @@ export default function DashboardLayout({
   // Close mobile sidebar on route change
   useEffect(() => {
     setSidebarOpen(false);
-  }, []);
+  }, [pathname]);
 
   if (!mounted || !isAuthenticated) {
     return (
@@ -42,6 +43,7 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Topbar — sticky, self-contained */}
       <DashboardTopbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
       <div className="flex flex-1 overflow-hidden">
@@ -56,7 +58,8 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <div
           className={`
-            fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 lg:z-auto
+            fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 ease-in-out
+            lg:relative lg:translate-x-0 lg:z-auto
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
         >
@@ -64,9 +67,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
