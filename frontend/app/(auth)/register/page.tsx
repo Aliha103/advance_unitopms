@@ -71,35 +71,24 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      // Mock API call if real backend not ready
-      if (process.env.NODE_ENV === 'development') {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        await api.post("/auth/host-application/", {
-            first_name: firstName,
-            last_name: lastName,
-            email,
-            phone,
-            company_name: company,
-            country, // The logic in the snippet had COUNTRIES find, but CountrySelect returns code already? Let's check. 
-            // The snippet had: country: COUNTRIES.find((c) => c.code === country)?.name ?? country
-            // React state `country` stores the CODE (e.g. "US"). 
-            // The backend might expect full name or code. The snippet sends NAME. I will keep snippet logic.
-            // But wait, the snipped imported COUNTRIES from @/components/ui/countries.
-            // My implementation of CountrySelect stores CODE in value.
-            // So:
-            country_name: COUNTRIES.find((c) => c.code === country)?.name ?? country,
-            property_type: propertyType,
-            num_properties: numPropsInt,
-            num_units: numUnitsInt,
-            referral_source: referral,
-            marketing_opt_in: Boolean(marketing),
-        });
-      }
+      await api.post("/auth/host-application/", {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone,
+        company_name: company,
+        country,
+        country_name: COUNTRIES.find((c) => c.code === country)?.name ?? country,
+        property_type: propertyType,
+        num_properties: numPropsInt,
+        num_units: numUnitsInt,
+        referral_source: referral,
+        marketing_opt_in: Boolean(marketing),
+      });
       setIsSuccess(true);
     } catch (err:any) {
       console.error(err);
-      setError("Something went wrong. Please try again.");
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

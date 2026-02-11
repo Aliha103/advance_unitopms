@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { api } from '@/lib/api-client';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function LoginPage() {
   const router = useRouter();
+  const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -18,19 +21,19 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       if (!email || !password) {
         throw new Error('Please enter both email and password.');
       }
-      
-      // Navigate to dashboard (simulating expected behavior)
-      console.log('Login successful for:', email);
-      // Save dummy user to local storage if needed, or rely on cookie from backend
-      localStorage.setItem('user', JSON.stringify({ email, role: 'host' }));
-      
-      router.push('/dashboard'); 
+
+      const data = await api.post<{
+        access: string;
+        refresh: string;
+        user: { id: number; email: string; full_name: string; is_host: boolean };
+        host_profile?: any;
+      }>('/auth/login/', { email, password });
+
+      login(data);
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
