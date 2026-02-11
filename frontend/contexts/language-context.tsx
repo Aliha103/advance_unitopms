@@ -52,6 +52,7 @@ const translations = {
   es: {},
   fr: {},
   de: {},
+  it: {},
 };
 
 // Fill missing translations with English
