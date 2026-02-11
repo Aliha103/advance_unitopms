@@ -55,7 +55,6 @@ services:
         max-size: "10m"
         max-file: "3"
     volumes:
-      - ./backend:/app
       - backup_data:/backups
     depends_on:
       db:
