@@ -24,3 +24,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* iOS bottom-sheet staggered entrance */
+@keyframes sheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* iOS pill indicator slide-in */
+@keyframes pillSlideIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Hero: ambient light breathing */
+@keyframes heroGlow {
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.15) translate(20px, -10px); }
+}
+
+/* Hero: floating particles */
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-30px) scale(1.3); opacity: 0.8; }
+}
+
+/* Hero: gradient shimmer on headline */
+@keyframes heroShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}

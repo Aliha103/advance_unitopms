@@ -4,4 +4,6 @@ export { TestimonialsSection } from "./testimonials-section";
 export { ComparisonSection } from "./comparison-section";
 export { FeaturesSection } from "./features-section";
 export { CtaSection } from "./cta-section";
+export { PricingSection } from "./pricing-section";
+export { MobileStickyCta } from "./mobile-sticky-cta";
 export { Footer } from "./footer";

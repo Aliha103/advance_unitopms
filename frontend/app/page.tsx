@@ -7,6 +7,8 @@ import {
   TestimonialsSection,
   ComparisonSection,
   FeaturesSection,
+  PricingSection,
+  MobileStickyCta,
   CtaSection,
   Footer,
 } from "@/components/landing";
@@ -20,8 +22,10 @@ export default function LandingPage() {
       <TestimonialsSection />
       <ComparisonSection />
       <FeaturesSection />
+      <PricingSection />
       <CtaSection />
       <Footer />
+      <MobileStickyCta />
     </div>
   );
 }
