@@ -3,23 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getHostBasePath(pathname: string, hostProfileId?: number): string {
-  // Try to extract host_id from URL: /dashboard/{host_id}/...
-  const parts = pathname.split("/");
-  if (parts.length >= 3 && parts[1] === "dashboard" && parts[2]) {
-    return `/dashboard/${parts[2]}`;
-  }
-  // Fallback to host profile id from store
-  if (hostProfileId) {
-    return `/dashboard/${hostProfileId}`;
-  }
-  return "/dashboard";
-}
+const DASHBOARD_BASE = "/dashboard";
 
 // ── SVG Icon Paths ──────────────────────────────────────────────────────────
 
@@ -75,15 +63,19 @@ function HostNavItem({
   icon,
   label,
   isCollapsed,
+  exact,
   pathname,
 }: {
   href: string;
   icon: string;
   label: string;
   isCollapsed: boolean;
+  exact?: boolean;
   pathname: string;
 }) {
-  const isActive = pathname === href || pathname.startsWith(href + "/");
+  const isActive = exact
+    ? pathname === href
+    : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
@@ -133,11 +125,10 @@ function SectionHeader({
 
 export function HostSidebar() {
   const pathname = usePathname();
-  const hostProfile = useAuthStore((s) => s.hostProfile);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const base = getHostBasePath(pathname, hostProfile?.id);
-  const u = (suffix: string) => (suffix ? `${base}/${suffix}` : base);
+  const u = (suffix: string) =>
+    suffix ? `${DASHBOARD_BASE}/${suffix}` : DASHBOARD_BASE;
 
   return (
     <aside
@@ -150,7 +141,7 @@ export function HostSidebar() {
         <div className="mb-4">
           <SectionHeader label="Main" isCollapsed={isCollapsed} />
           <div className="flex flex-col gap-0.5">
-            <HostNavItem href={u("")} icon="grid" label="Overview" isCollapsed={isCollapsed} pathname={pathname} />
+            <HostNavItem href={u("")} icon="grid" label="Overview" exact isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("front-desk")} icon="ticket" label="Front Desk" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("calendar")} icon="calendar" label="Calendar" isCollapsed={isCollapsed} pathname={pathname} />
           </div>

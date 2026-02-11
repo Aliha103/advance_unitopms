@@ -72,7 +72,7 @@ export function TopbarSearch() {
   // Flat list for keyboard nav
   const flatList = Object.values(grouped).flat();
 
-  // ⌘K / Ctrl+K toggle
+  // Cmd+K / Ctrl+K toggle
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -131,19 +131,24 @@ export function TopbarSearch() {
 
   return (
     <div ref={ref} className="relative hidden md:block">
-      {/* Search trigger button */}
+      {/* Search trigger with 3D inset effect */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2.5 h-[38px] px-3.5 rounded-full transition-all duration-200 group",
+          "flex items-center gap-2.5 h-10 px-4 rounded-xl transition-all duration-200 group",
           open
-            ? "w-72 bg-white shadow-sm ring-1 ring-gray-900/10"
-            : "w-60 bg-gray-100/80 hover:bg-gray-200/60"
+            ? "w-72 bg-white ring-1 ring-gray-900/10"
+            : "w-64 bg-white/60 hover:bg-white active:scale-[0.98]"
         )}
+        style={{
+          boxShadow: open
+            ? "0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)"
+            : "inset 0 1px 2px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.8)",
+        }}
       >
         <svg
-          className="w-[15px] h-[15px] text-gray-400 shrink-0"
+          className="w-4 h-4 text-gray-400 shrink-0"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -155,21 +160,39 @@ export function TopbarSearch() {
             d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
           />
         </svg>
-        <span className="text-[13px] text-gray-500 flex-1 text-left">
+        <span className="text-[13px] text-gray-400 flex-1 text-left font-medium">
           Go to...
         </span>
-        <kbd className="inline-flex items-center h-5 px-1.5 text-[10px] font-medium text-gray-400 bg-gray-200/60 rounded-md font-mono">
+        <kbd
+          className="inline-flex items-center h-5 px-1.5 text-[10px] font-bold text-gray-400 rounded-md font-mono"
+          style={{
+            background: "linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+          }}
+        >
           ⌘K
         </kbd>
       </button>
 
-      {/* Command palette dropdown */}
+      {/* Command palette dropdown with depth */}
       {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 w-[360px] mt-2 bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden z-50">
-          {/* Search input */}
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
+        <div
+          className="absolute top-full left-1/2 -translate-x-1/2 w-[380px] mt-3 rounded-2xl overflow-hidden z-50"
+          style={{
+            background: "linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)",
+            boxShadow:
+              "0 25px 60px -12px rgba(0,0,0,0.15), 0 12px 24px -8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+          }}
+        >
+          {/* Search input with inset depth */}
+          <div
+            className="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-100"
+            style={{
+              background: "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
+            }}
+          >
             <svg
-              className="w-[15px] h-[15px] text-gray-400 shrink-0"
+              className="w-4 h-4 text-teal-500 shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -188,15 +211,21 @@ export function TopbarSearch() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search pages..."
-              className="flex-1 text-[13px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
+              className="flex-1 text-[13px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
             />
-            <kbd className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+            <kbd
+              className="text-[10px] font-bold text-gray-400 px-1.5 py-0.5 rounded-md"
+              style={{
+                background: "linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%)",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+              }}
+            >
               ESC
             </kbd>
           </div>
 
           {/* Results grouped by section */}
-          <div className="max-h-[320px] overflow-y-auto p-2">
+          <div className="max-h-[340px] overflow-y-auto p-2">
             {flatList.length === 0 ? (
               <div className="px-2 py-8 text-[13px] text-gray-400 text-center">
                 No pages found
@@ -204,47 +233,66 @@ export function TopbarSearch() {
             ) : (
               Object.entries(grouped).map(([section, items]) => (
                 <div key={section} className="mb-1">
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                     {section}
                   </div>
                   {items.map((item) => {
                     const idx = flatList.indexOf(item);
+                    const isActive = idx === activeIndex;
                     return (
                       <button
                         key={item.href}
                         type="button"
                         className={cn(
-                          "w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-[13px] transition-colors",
-                          idx === activeIndex
-                            ? "bg-gray-900 text-white"
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150",
+                          isActive
+                            ? "text-white"
                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         )}
+                        style={
+                          isActive
+                            ? {
+                                background: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                              }
+                            : undefined
+                        }
                         onClick={() => navigate(item.href)}
                         onMouseEnter={() => setActiveIndex(idx)}
                       >
-                        <svg
+                        <div
                           className={cn(
-                            "w-4 h-4 shrink-0",
-                            idx === activeIndex ? "text-gray-400" : "text-gray-300"
+                            "w-8 h-8 flex items-center justify-center rounded-lg shrink-0 transition-colors",
+                            isActive ? "bg-white/10" : "bg-gray-100/80"
                           )}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1.5}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d={item.icon}
-                          />
-                        </svg>
+                          <svg
+                            className={cn(
+                              "w-4 h-4 shrink-0",
+                              isActive ? "text-gray-300" : "text-gray-400"
+                            )}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d={item.icon}
+                            />
+                          </svg>
+                        </div>
                         <span className="flex-1 text-left font-medium">
                           {item.label}
                         </span>
-                        {idx === activeIndex && (
-                          <span className="text-[10px] text-gray-500">
-                            Enter
-                          </span>
+                        {isActive && (
+                          <kbd
+                            className="text-[10px] font-bold text-gray-500 px-1.5 py-0.5 rounded"
+                            style={{ background: "rgba(255,255,255,0.1)" }}
+                          >
+                            ↵
+                          </kbd>
                         )}
                       </button>
                     );
@@ -254,18 +302,47 @@ export function TopbarSearch() {
             )}
           </div>
 
-          {/* Footer hint */}
-          <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-400">
-            <span className="flex items-center gap-1">
-              <kbd className="bg-gray-100 px-1 py-0.5 rounded font-mono">↑↓</kbd>
+          {/* Footer hint with 3D keys */}
+          <div
+            className="px-4 py-2.5 border-t border-gray-100/80 flex items-center gap-4 text-[10px] text-gray-400 font-medium"
+            style={{
+              background: "linear-gradient(180deg, transparent 0%, #f8fafc 100%)",
+            }}
+          >
+            <span className="flex items-center gap-1.5">
+              <kbd
+                className="px-1 py-0.5 rounded font-mono font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                ↑↓
+              </kbd>
               navigate
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="bg-gray-100 px-1 py-0.5 rounded font-mono">↵</kbd>
+            <span className="flex items-center gap-1.5">
+              <kbd
+                className="px-1 py-0.5 rounded font-mono font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                ↵
+              </kbd>
               open
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="bg-gray-100 px-1 py-0.5 rounded font-mono">esc</kbd>
+            <span className="flex items-center gap-1.5">
+              <kbd
+                className="px-1 py-0.5 rounded font-mono font-bold"
+                style={{
+                  background: "linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                esc
+              </kbd>
               close
             </span>
           </div>

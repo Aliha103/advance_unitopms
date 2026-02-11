@@ -3,16 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getAdminBase(userId?: number): string {
-  if (!userId) return "/login";
-  const token = String(userId).slice(0, 8);
-  return `/admin/${token}`;
-}
+const DASHBOARD_BASE = "/dashboard";
 
 // ── SVG Icon Paths ──────────────────────────────────────────────────────────
 
@@ -85,15 +80,19 @@ function NavItem({
   icon,
   label,
   badge,
+  exact,
   pathname,
 }: {
   href: string;
   icon: string;
   label: string;
   badge?: number;
+  exact?: boolean;
   pathname: string;
 }) {
-  const isActive = pathname === href || pathname.startsWith(href + "/");
+  const isActive = exact
+    ? pathname === href
+    : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
@@ -231,10 +230,9 @@ function Divider() {
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
-  const base = getAdminBase(user?.id);
 
-  const u = (suffix: string) => `${base}${suffix}`;
+  const u = (suffix: string) =>
+    suffix ? `${DASHBOARD_BASE}${suffix}` : DASHBOARD_BASE;
 
   return (
     <aside className="h-full w-full bg-white border-r border-gray-200 flex flex-col overflow-hidden">
@@ -242,7 +240,7 @@ export function AdminSidebar() {
       <nav className="flex-1 p-2.5 overflow-y-auto">
         {/* ===== CORE ===== */}
         <SidebarSection label="Core">
-          <NavItem href={u("")} icon="grid" label="Overview" pathname={pathname} />
+          <NavItem href={u("")} icon="grid" label="Overview" exact pathname={pathname} />
           <NavItem href={u("/inbox")} icon="inbox" label="Inbox" badge={1} pathname={pathname} />
         </SidebarSection>
 

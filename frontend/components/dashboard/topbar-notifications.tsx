@@ -10,7 +10,8 @@ const MOCK_NOTIFICATIONS = [
     title: "New Reservation #2929",
     desc: "Added by John Doe just now",
     icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-    color: "text-blue-600 bg-blue-50",
+    color: "from-blue-500 to-blue-600",
+    bgColor: "bg-blue-50",
     unread: true,
     time: "Just now",
   },
@@ -19,7 +20,8 @@ const MOCK_NOTIFICATIONS = [
     title: "Host Application Received",
     desc: "Grand Hotel & Spa applied",
     icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-    color: "text-teal-600 bg-teal-50",
+    color: "from-teal-500 to-emerald-500",
+    bgColor: "bg-teal-50",
     unread: true,
     time: "2m ago",
   },
@@ -28,7 +30,8 @@ const MOCK_NOTIFICATIONS = [
     title: "Payment Failed",
     desc: "Invoice #1847 — Sunset Villas",
     icon: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",
-    color: "text-red-600 bg-red-50",
+    color: "from-red-500 to-rose-500",
+    bgColor: "bg-red-50",
     unread: false,
     time: "1h ago",
   },
@@ -69,14 +72,14 @@ export function TopbarNotifications() {
 
   return (
     <div className="relative" ref={ref}>
-      {/* Bell button */}
+      {/* Bell button with 3D press effect */}
       <button
         type="button"
         className={cn(
-          "relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
+          "relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200",
           open
-            ? "bg-gray-900 text-white"
-            : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            ? "bg-gray-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]"
+            : "text-gray-500 hover:text-gray-700 bg-white/60 hover:bg-white hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-95 active:shadow-[0_1px_2px_rgba(0,0,0,0.1)]"
         )}
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
@@ -95,31 +98,59 @@ export function TopbarNotifications() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white">
+          <span
+            className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[10px] font-bold text-white rounded-full ring-2 ring-white"
+            style={{
+              background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+              boxShadow: "0 2px 8px rgba(239,68,68,0.4)",
+            }}
+          >
             {unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown with 3D depth */}
       <div
         className={cn(
-          "absolute right-0 top-full mt-2 w-[340px] bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transition-all origin-top-right z-50",
+          "absolute right-0 top-full mt-3 w-[360px] rounded-2xl overflow-hidden transition-all duration-200 origin-top-right z-50",
           open
             ? "opacity-100 scale-100 translate-y-0"
-            : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+            : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
         )}
+        style={{
+          background: "linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)",
+          boxShadow:
+            "0 25px 60px -12px rgba(0,0,0,0.15), 0 12px 24px -8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+        }}
       >
-        {/* Header */}
-        <div className="px-4 py-3.5 flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold text-gray-900">
-            Notifications
-          </h3>
+        {/* Header with subtle gradient */}
+        <div
+          className="px-5 py-4 flex items-center justify-between"
+          style={{
+            background: "linear-gradient(180deg, #f8fafc 0%, transparent 100%)",
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-sm font-bold text-gray-900">
+              Notifications
+            </h3>
+            {unreadCount > 0 && (
+              <span
+                className="inline-flex items-center h-5 px-2 text-[10px] font-bold text-white rounded-full"
+                style={{
+                  background: "linear-gradient(135deg, #0d9488 0%, #0891b2 100%)",
+                }}
+              >
+                {unreadCount} new
+              </span>
+            )}
+          </div>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllRead}
-              className="text-[11px] font-medium text-teal-600 hover:text-teal-700 transition-colors"
+              className="text-[11px] font-semibold text-teal-600 hover:text-teal-700 transition-colors hover:underline"
             >
               Mark all read
             </button>
@@ -127,61 +158,74 @@ export function TopbarNotifications() {
         </div>
 
         {/* Notification list */}
-        <div className="max-h-[320px] overflow-y-auto px-2 pb-2">
+        <div className="max-h-[340px] overflow-y-auto px-2.5 pb-2.5">
           {notifications.map((notif) => (
             <div
               key={notif.id}
               className={cn(
-                "flex items-start gap-3 px-3 py-3 cursor-pointer rounded-xl transition-colors hover:bg-gray-50",
-                notif.unread && "bg-blue-50/40"
+                "flex items-start gap-3.5 px-3 py-3.5 cursor-pointer rounded-xl transition-all duration-200",
+                notif.unread
+                  ? "bg-gradient-to-r from-blue-50/60 to-transparent hover:from-blue-50 hover:to-blue-25/50"
+                  : "hover:bg-gray-50/80"
               )}
             >
-              {/* Icon */}
-              <span
-                className={cn(
-                  "w-9 h-9 flex items-center justify-center rounded-full shrink-0",
-                  notif.color
-                )}
+              {/* Icon with gradient background */}
+              <div
+                className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0 text-white"
+                style={{
+                  background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                }}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d={notif.icon}
-                  />
-                </svg>
-              </span>
+                <span className={cn("w-10 h-10 flex items-center justify-center rounded-xl shrink-0 text-white bg-gradient-to-br", notif.color)}>
+                  <svg
+                    className="w-[18px] h-[18px]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d={notif.icon}
+                    />
+                  </svg>
+                </span>
+              </div>
               {/* Content */}
               <div className="flex-1 min-w-0 pt-0.5">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-medium text-gray-900 truncate">
+                  <p className="text-[13px] font-semibold text-gray-900 truncate">
                     {notif.title}
                   </p>
                   {notif.unread && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+                        boxShadow: "0 0 6px rgba(59,130,246,0.5)",
+                      }}
+                    />
                   )}
                 </div>
                 <p className="text-[12px] text-gray-500 mt-0.5 truncate">
                   {notif.desc}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-1">{notif.time}</p>
+                <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
+                  {notif.time}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-gray-100 text-center">
+        {/* Footer with raised button */}
+        <div className="px-4 py-3 border-t border-gray-100/80">
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+            className="w-full py-2 text-[12px] font-bold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 active:scale-[0.98]"
           >
             View all notifications
           </button>

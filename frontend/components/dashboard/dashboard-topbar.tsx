@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { TopbarSearch } from "./topbar-search";
 import { TopbarNotifications } from "./topbar-notifications";
@@ -14,15 +13,28 @@ export function DashboardTopbar({
   onToggleSidebar: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-200/60 shadow-sm shadow-gray-100/50">
-      <header className="h-16 w-full">
+    <div className="sticky top-0 z-50">
+      {/* Layered background for depth */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          boxShadow:
+            "0 1px 0 0 rgba(0,0,0,0.05), 0 4px 16px -2px rgba(0,0,0,0.06), 0 1px 3px 0 rgba(0,0,0,0.04)",
+        }}
+      />
+      {/* Subtle top highlight for 3D raised effect */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+
+      <header className="relative h-16 w-full">
         <div className="flex items-center justify-between h-full px-4 lg:px-6">
           {/* ─── LEFT: Mobile toggle + Logo ─── */}
           <div className="flex items-center gap-3 min-w-0">
             {/* Mobile sidebar toggle */}
             <button
               type="button"
-              className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+              className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-800 rounded-xl transition-all duration-200 hover:bg-white hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-95"
               onClick={onToggleSidebar}
               aria-label="Toggle sidebar"
             >
@@ -41,17 +53,21 @@ export function DashboardTopbar({
               </svg>
             </button>
 
-            {/* Logo */}
+            {/* Logo with glow */}
             <Link
               href="/dashboard"
-              className="shrink-0 flex items-center rounded-xl active:scale-[0.97] transition-transform duration-200"
+              className="shrink-0 flex items-center rounded-xl active:scale-[0.97] transition-all duration-200 group"
               aria-label="UnitoPMS Dashboard"
             >
-              <img
-                src="/assets/logo.png"
-                alt="UnitoPMS"
-                className="h-8 sm:h-9 w-auto"
-              />
+              <div className="relative">
+                <img
+                  src="/assets/logo.png"
+                  alt="UnitoPMS"
+                  className="h-8 sm:h-9 w-auto relative z-10 drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
+                />
+                {/* Logo glow on hover */}
+                <div className="absolute inset-0 rounded-xl bg-teal-400/0 group-hover:bg-teal-400/10 blur-lg transition-all duration-300" />
+              </div>
             </Link>
           </div>
 
@@ -59,11 +75,11 @@ export function DashboardTopbar({
           <TopbarSearch />
 
           {/* ─── RIGHT: Actions ─── */}
-          <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1 lg:gap-2 shrink-0">
             {/* Mobile search trigger */}
             <button
               type="button"
-              className="md:hidden w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+              className="md:hidden w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-xl transition-all duration-200 hover:bg-white hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-95"
               aria-label="Search"
             >
               <svg
@@ -84,8 +100,10 @@ export function DashboardTopbar({
             {/* Notifications */}
             <TopbarNotifications />
 
-            {/* Divider */}
-            <div className="hidden lg:block h-7 w-px bg-gray-200/80 mx-1" />
+            {/* Divider — vertical line with 3D inset */}
+            <div className="hidden lg:flex items-center mx-1.5">
+              <div className="h-7 w-px bg-gradient-to-b from-transparent via-gray-300/60 to-transparent" />
+            </div>
 
             {/* Profile */}
             <TopbarProfile />
