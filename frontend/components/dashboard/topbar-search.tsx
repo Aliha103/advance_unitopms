@@ -82,18 +82,18 @@ export function TopbarSearch() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2 h-9 px-3 rounded-lg border transition-all duration-200 group",
+          "flex items-center gap-2.5 h-[38px] px-3.5 rounded-full transition-all duration-200 group",
           open
-            ? "w-72 border-teal-300 ring-2 ring-teal-100 bg-white"
-            : "w-64 border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-white"
+            ? "w-72 bg-white shadow-sm ring-1 ring-gray-900/10"
+            : "w-60 bg-gray-100/80 hover:bg-gray-200/60"
         )}
       >
         <svg
-          className="w-4 h-4 text-gray-400 shrink-0"
+          className="w-[15px] h-[15px] text-gray-400 shrink-0"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth={2}
+          strokeWidth={2.5}
         >
           <path
             strokeLinecap="round"
@@ -101,25 +101,25 @@ export function TopbarSearch() {
             d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
           />
         </svg>
-        <span className="text-[13px] text-gray-400 flex-1 text-left">
+        <span className="text-[13px] text-gray-500 flex-1 text-left">
           Search...
         </span>
-        <kbd className="inline-flex items-center h-5 px-1.5 text-[10px] font-medium text-gray-400 bg-white border border-gray-200 rounded font-mono">
+        <kbd className="inline-flex items-center h-5 px-1.5 text-[10px] font-medium text-gray-400 bg-gray-200/60 rounded-md font-mono">
           ⌘K
         </kbd>
       </button>
 
       {/* Command palette dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 w-[360px] mt-2 bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden z-50">
           {/* Search input */}
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
             <svg
-              className="w-4 h-4 text-gray-400 shrink-0"
+              className="w-[15px] h-[15px] text-gray-400 shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={2}
+              strokeWidth={2.5}
             >
               <path
                 strokeLinecap="round"
@@ -133,24 +133,20 @@ export function TopbarSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Type a command or search..."
-              className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
+              className="flex-1 text-[13px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
             />
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded"
-            >
+            <kbd className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
               ESC
-            </button>
+            </kbd>
           </div>
 
           {/* Quick actions */}
-          <div className="p-1.5">
-            <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+          <div className="p-2">
+            <div className="px-2 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
               Quick Actions
             </div>
             {filtered.length === 0 ? (
-              <div className="px-2 py-4 text-sm text-gray-400 text-center">
+              <div className="px-2 py-6 text-[13px] text-gray-400 text-center">
                 No results found
               </div>
             ) : (
@@ -158,12 +154,12 @@ export function TopbarSearch() {
                 <button
                   key={label}
                   type="button"
-                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors group/action"
+                  className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors group/action"
                   onClick={() => setOpen(false)}
                 >
                   <span
                     className={cn(
-                      "w-8 h-8 flex items-center justify-center rounded-lg transition-colors shrink-0",
+                      "w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0",
                       color
                     )}
                   >
@@ -182,7 +178,7 @@ export function TopbarSearch() {
                     </svg>
                   </span>
                   <span className="flex-1 text-left font-medium">{label}</span>
-                  <kbd className="text-[10px] text-gray-300 font-mono group-hover/action:text-gray-400">
+                  <kbd className="text-[10px] text-gray-300 font-mono group-hover/action:text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
                     {shortcut}
                   </kbd>
                 </button>

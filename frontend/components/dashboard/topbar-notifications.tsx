@@ -73,20 +73,20 @@ export function TopbarNotifications() {
       <button
         type="button"
         className={cn(
-          "relative w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200",
+          "relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200",
           open
-            ? "bg-gray-100 text-gray-900"
-            : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+            ? "bg-gray-900 text-white"
+            : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
         )}
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
       >
         <svg
-          className="w-5 h-5"
+          className="w-[18px] h-[18px]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth={1.5}
+          strokeWidth={1.8}
         >
           <path
             strokeLinecap="round"
@@ -95,7 +95,7 @@ export function TopbarNotifications() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white">
             {unreadCount}
           </span>
         )}
@@ -104,29 +104,22 @@ export function TopbarNotifications() {
       {/* Dropdown */}
       <div
         className={cn(
-          "absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden transition-all origin-top-right z-50",
+          "absolute right-0 top-full mt-2 w-[340px] bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transition-all origin-top-right z-50",
           open
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
         )}
       >
         {/* Header */}
-        <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900">
-              Notifications
-            </h3>
-            {unreadCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-teal-700 bg-teal-100 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </div>
+        <div className="px-4 py-3.5 flex items-center justify-between">
+          <h3 className="text-[13px] font-semibold text-gray-900">
+            Notifications
+          </h3>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllRead}
-              className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors"
+              className="text-[11px] font-medium text-teal-600 hover:text-teal-700 transition-colors"
             >
               Mark all read
             </button>
@@ -134,19 +127,19 @@ export function TopbarNotifications() {
         </div>
 
         {/* Notification list */}
-        <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+        <div className="max-h-[320px] overflow-y-auto px-2 pb-2">
           {notifications.map((notif) => (
             <div
               key={notif.id}
               className={cn(
-                "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50",
-                notif.unread && "bg-teal-50/30"
+                "flex items-start gap-3 px-3 py-3 cursor-pointer rounded-xl transition-colors hover:bg-gray-50",
+                notif.unread && "bg-blue-50/40"
               )}
             >
               {/* Icon */}
               <span
                 className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-lg shrink-0 mt-0.5",
+                  "w-9 h-9 flex items-center justify-center rounded-full shrink-0",
                   notif.color
                 )}
               >
@@ -165,31 +158,30 @@ export function TopbarNotifications() {
                 </svg>
               </span>
               {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {notif.title}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[13px] font-medium text-gray-900 truncate">
+                    {notif.title}
+                  </p>
+                  {notif.unread && (
+                    <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
+                  )}
+                </div>
+                <p className="text-[12px] text-gray-500 mt-0.5 truncate">
                   {notif.desc}
                 </p>
-              </div>
-              {/* Time + unread dot */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] text-gray-400">{notif.time}</span>
-                {notif.unread && (
-                  <span className="w-2 h-2 bg-teal-500 rounded-full" />
-                )}
+                <p className="text-[11px] text-gray-400 mt-1">{notif.time}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-gray-100 text-center">
+        <div className="px-4 py-3 border-t border-gray-100 text-center">
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+            className="text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
           >
             View all notifications
           </button>

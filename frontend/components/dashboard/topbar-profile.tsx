@@ -74,82 +74,71 @@ export function TopbarProfile() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex items-center gap-2 p-1 rounded-lg transition-all duration-200",
-          open ? "bg-gray-100" : "hover:bg-gray-50"
-        )}
+        className="relative flex items-center outline-none"
         aria-label="User menu"
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+        <div
+          className={cn(
+            "w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-200 ring-2",
+            open
+              ? "ring-teal-500 shadow-lg shadow-teal-500/20"
+              : "ring-transparent hover:ring-gray-200"
+          )}
+          style={{
+            background: "linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #6366f1 100%)",
+          }}
+        >
           {userInitials}
         </div>
-        {/* Name on desktop */}
-        <div className="hidden lg:flex items-center gap-1">
-          <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">
-            {userName.split(" ")[0]}
-          </span>
-          <svg
-            className={cn(
-              "w-3.5 h-3.5 text-gray-400 transition-transform duration-200",
-              open && "rotate-180"
-            )}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
+        {/* Online indicator */}
+        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
       </button>
 
       {/* Dropdown */}
       <div
         className={cn(
-          "absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden transition-all origin-top-right z-50",
+          "absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transition-all origin-top-right z-50",
           open
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
         )}
       >
         {/* User info header */}
-        <div className="px-4 py-3 bg-gray-50/50">
+        <div className="px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ring-2 ring-white shadow-md"
+              style={{
+                background: "linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #6366f1 100%)",
+              }}
+            >
               {userInitials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-[13px] font-semibold text-gray-900 truncate">
                 {userName}
               </p>
-              <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+              <p className="text-[11px] text-gray-500 truncate">{userEmail}</p>
+              <span className="inline-flex items-center mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gray-100 text-gray-600">
+                {role}
+                {hostProfile?.company_name && (
+                  <span className="ml-1 text-gray-400 font-normal">
+                    &middot; {hostProfile.company_name}
+                  </span>
+                )}
+              </span>
             </div>
-          </div>
-          {/* Role badge */}
-          <div className="mt-2">
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded-full bg-teal-100 text-teal-700 uppercase tracking-wide">
-              {role}
-              {hostProfile?.company_name && (
-                <span className="ml-1 text-teal-500 font-normal normal-case">
-                  &middot; {hostProfile.company_name}
-                </span>
-              )}
-            </span>
           </div>
         </div>
 
         {/* Menu links */}
-        <div className="py-1">
+        <div className="px-2 py-1.5 border-t border-gray-100">
           {menuItems.map(({ label, href, icon }) => (
             <Link
               key={label}
               href={href}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
             >
               <svg
                 className="w-4 h-4 text-gray-400"
@@ -170,11 +159,11 @@ export function TopbarProfile() {
         </div>
 
         {/* Logout */}
-        <div className="border-t border-gray-100 py-1">
+        <div className="px-2 py-1.5 border-t border-gray-100">
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[13px] text-red-600 hover:bg-red-50 transition-colors"
           >
             <svg
               className="w-4 h-4"
