@@ -129,8 +129,10 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-    # CSRF
-    CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://unitopms.com,https://www.unitopms.com,http://192.168.0.122:8000').split(',')
+    SECURE_HSTS_PRELOAD = True
+
+# CSRF
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://unitopms.com,https://www.unitopms.com,http://192.168.0.122:8000').split(',')
 
 # Celery Configuration
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
