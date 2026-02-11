@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework import serializers
 
-from .models import HostProfile
+from .models import HostProfile, ApplicationLog, ApplicationPermission
 
 User = get_user_model()
 
@@ -131,6 +131,18 @@ class HostApplicationListSerializer(serializers.ModelSerializer):
     """Read-only serializer for admin applications list."""
     email = serializers.EmailField(source='user.email', read_only=True)
     full_name = serializers.CharField(source='user.full_name', read_only=True)
+    approved_by_name = serializers.CharField(
+        source='approved_by.full_name', read_only=True, default=''
+    )
+    approved_by_email = serializers.EmailField(
+        source='approved_by.email', read_only=True, default=''
+    )
+    rejected_by_name = serializers.CharField(
+        source='rejected_by.full_name', read_only=True, default=''
+    )
+    rejected_by_email = serializers.EmailField(
+        source='rejected_by.email', read_only=True, default=''
+    )
 
     class Meta:
         model = HostProfile
@@ -151,8 +163,12 @@ class HostApplicationListSerializer(serializers.ModelSerializer):
             'notes',
             'rejection_reason',
             'rejected_at',
+            'rejected_by_name',
+            'rejected_by_email',
             'created_at',
             'approved_at',
+            'approved_by_name',
+            'approved_by_email',
         ]
         read_only_fields = fields
 
@@ -175,3 +191,78 @@ class SetPasswordSerializer(serializers.Serializer):
                 {'password_confirm': 'Passwords do not match.'}
             )
         return attrs
+
+
+class ApplicationLogSerializer(serializers.ModelSerializer):
+    """Read-only serializer for application activity logs."""
+    actor_name = serializers.CharField(
+        source='actor.full_name', read_only=True, default='System'
+    )
+    actor_email = serializers.EmailField(
+        source='actor.email', read_only=True, default=''
+    )
+    action_display = serializers.CharField(
+        source='get_action_display', read_only=True
+    )
+
+    class Meta:
+        model = ApplicationLog
+        fields = [
+            'id',
+            'action',
+            'action_display',
+            'actor_name',
+            'actor_email',
+            'note',
+            'ip_address',
+            'metadata',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+
+class ApplicationPermissionSerializer(serializers.ModelSerializer):
+    """Read-only serializer for listing permissions."""
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_name = serializers.CharField(
+        source='user.full_name', read_only=True, default=''
+    )
+    granted_by_email = serializers.EmailField(
+        source='granted_by.email', read_only=True, default=''
+    )
+    permission_display = serializers.CharField(
+        source='get_permission_display', read_only=True
+    )
+
+    class Meta:
+        model = ApplicationPermission
+        fields = [
+            'id',
+            'user',
+            'user_email',
+            'user_name',
+            'permission',
+            'permission_display',
+            'granted_by',
+            'granted_by_email',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id', 'user_email', 'user_name', 'granted_by',
+            'granted_by_email', 'permission_display', 'created_at',
+        ]
+
+
+class GrantPermissionSerializer(serializers.Serializer):
+    """Validates granting a permission to a user."""
+    user_id = serializers.IntegerField()
+    permission = serializers.ChoiceField(
+        choices=ApplicationPermission.Permission.choices
+    )
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(pk=value, is_staff=True).exists():
+            raise serializers.ValidationError(
+                'User not found or is not a staff member.'
+            )
+        return value

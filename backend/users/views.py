@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import HostProfile
+from .models import HostProfile, ApplicationLog, ApplicationPermission
 from .serializers import (
     HostApplicationSerializer,
     HostApplicationListSerializer,
@@ -18,7 +18,16 @@ from .serializers import (
     HostProfileUpdateSerializer,
     RejectApplicationSerializer,
     SetPasswordSerializer,
+    ApplicationLogSerializer,
+    ApplicationPermissionSerializer,
+    GrantPermissionSerializer,
 )
+from .permissions import (
+    CanViewApplications,
+    CanReviewApplications,
+    CanManageApplications,
+)
+from .log_utils import create_application_log
 
 User = get_user_model()
 
@@ -123,14 +132,16 @@ class HostProfileView(generics.RetrieveUpdateAPIView):
 class ApplicationListView(generics.ListAPIView):
     """
     GET /api/auth/applications/
-    Admin-only. Returns all host applications.
+    Staff with at least 'view' permission. Returns all host applications.
     Supports filtering via ?status=pending_review|approved|rejected
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [CanViewApplications]
     serializer_class = HostApplicationListSerializer
 
     def get_queryset(self):
-        qs = HostProfile.objects.select_related('user').all()
+        qs = HostProfile.objects.select_related(
+            'user', 'approved_by', 'rejected_by'
+        ).all()
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -140,10 +151,10 @@ class ApplicationListView(generics.ListAPIView):
 class ApplicationApproveView(APIView):
     """
     POST /api/auth/applications/<id>/approve/
-    Admin-only. Approves a host application and returns a set-password URL.
+    Staff with 'review' permission. Approves and returns a set-password URL.
     Also works for already-approved applications (to re-generate the link).
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [CanReviewApplications]
 
     def post(self, request, pk):
         try:
@@ -153,6 +164,8 @@ class ApplicationApproveView(APIView):
                 {'message': 'Application not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        is_resend = profile.status == HostProfile.Status.APPROVED
 
         if profile.status not in (
             HostProfile.Status.PENDING_REVIEW,
@@ -182,6 +195,18 @@ class ApplicationApproveView(APIView):
         )
         set_password_url = f'{frontend_url}/set-password?uid={uid}&token={token}'
 
+        # Create audit log
+        create_application_log(
+            application=profile,
+            action=(
+                ApplicationLog.Action.LINK_RESENT if is_resend
+                else ApplicationLog.Action.APPROVED
+            ),
+            actor=request.user,
+            request=request,
+            note=f'Set-password link generated for {user.email}',
+        )
+
         return Response({
             'message': 'Application approved.',
             'set_password_url': set_password_url,
@@ -193,9 +218,9 @@ class ApplicationApproveView(APIView):
 class ApplicationRejectView(APIView):
     """
     POST /api/auth/applications/<id>/reject/
-    Admin-only. Rejects a host application with optional reason.
+    Staff with 'review' permission. Rejects a host application with optional reason.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [CanReviewApplications]
 
     def post(self, request, pk):
         try:
@@ -215,12 +240,25 @@ class ApplicationRejectView(APIView):
         serializer = RejectApplicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        reason = serializer.validated_data.get('reason', '')
+
         profile.status = HostProfile.Status.REJECTED
-        profile.rejection_reason = serializer.validated_data.get('reason', '')
+        profile.rejection_reason = reason
         profile.rejected_at = timezone.now()
+        profile.rejected_by = request.user
         profile.save(update_fields=[
-            'status', 'rejection_reason', 'rejected_at', 'updated_at',
+            'status', 'rejection_reason', 'rejected_at', 'rejected_by',
+            'updated_at',
         ])
+
+        # Create audit log
+        create_application_log(
+            application=profile,
+            action=ApplicationLog.Action.REJECTED,
+            actor=request.user,
+            request=request,
+            note=reason,
+        )
 
         return Response(
             {'message': 'Application rejected.'},
@@ -277,7 +315,7 @@ class SetPasswordView(APIView):
         user.is_active = True
         user.save(update_fields=['password', 'is_active'])
 
-        # Move host profile to ACTIVE
+        # Move host profile to ACTIVE + log
         if hasattr(user, 'host_profile'):
             profile = user.host_profile
             if profile.status == HostProfile.Status.APPROVED:
@@ -289,7 +327,115 @@ class SetPasswordView(APIView):
                     'status', 'onboarding_step', 'updated_at',
                 ])
 
+            create_application_log(
+                application=profile,
+                action=ApplicationLog.Action.PASSWORD_SET,
+                actor=user,
+                request=request,
+                note='Host set their password and account was activated.',
+            )
+
         return Response(
             {'message': 'Password set successfully. You can now log in.'},
             status=status.HTTP_200_OK,
         )
+
+
+# ── Application Logs ────────────────────────────────────────────────────────
+
+
+class ApplicationLogListView(generics.ListAPIView):
+    """
+    GET /api/auth/applications/<id>/logs/
+    Staff with 'view' permission. Returns activity logs for an application.
+    """
+    permission_classes = [CanViewApplications]
+    serializer_class = ApplicationLogSerializer
+
+    def get_queryset(self):
+        return ApplicationLog.objects.select_related('actor').filter(
+            application_id=self.kwargs['pk']
+        )
+
+
+# ── Application Permissions Management ──────────────────────────────────────
+
+
+class ApplicationPermissionListView(generics.ListAPIView):
+    """
+    GET /api/auth/applications/permissions/
+    Staff with 'manage' permission. Lists all application permissions.
+    """
+    permission_classes = [CanManageApplications]
+    serializer_class = ApplicationPermissionSerializer
+
+    def get_queryset(self):
+        return ApplicationPermission.objects.select_related(
+            'user', 'granted_by'
+        ).all().order_by('user__email', 'permission')
+
+
+class GrantApplicationPermissionView(APIView):
+    """
+    POST /api/auth/applications/permissions/
+    Staff with 'manage' permission. Grant a permission to a staff user.
+    """
+    permission_classes = [CanManageApplications]
+
+    def post(self, request):
+        serializer = GrantPermissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.get(pk=serializer.validated_data['user_id'])
+        perm_value = serializer.validated_data['permission']
+
+        perm, created = ApplicationPermission.objects.get_or_create(
+            user=user,
+            permission=perm_value,
+            defaults={'granted_by': request.user},
+        )
+
+        if not created:
+            return Response(
+                {'message': 'Permission already granted.'},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            ApplicationPermissionSerializer(perm).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RevokeApplicationPermissionView(APIView):
+    """
+    DELETE /api/auth/applications/permissions/<id>/
+    Staff with 'manage' permission. Revoke a specific permission.
+    """
+    permission_classes = [CanManageApplications]
+
+    def delete(self, request, pk):
+        try:
+            perm = ApplicationPermission.objects.get(pk=pk)
+        except ApplicationPermission.DoesNotExist:
+            return Response(
+                {'message': 'Permission not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        perm.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StaffListView(generics.ListAPIView):
+    """
+    GET /api/auth/staff/
+    Staff with 'manage' permission. Lists staff users for permission assignment.
+    """
+    permission_classes = [CanManageApplications]
+
+    def get(self, request):
+        staff = User.objects.filter(is_staff=True).values(
+            'id', 'email', 'full_name'
+        ).order_by('email')
+        return Response(list(staff))

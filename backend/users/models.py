@@ -188,6 +188,12 @@ class HostProfile(models.Model):
     suspension_reason = models.TextField(blank=True)
     rejection_reason = models.TextField(blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='rejected_hosts',
+    )
     profile_photo = models.URLField(blank=True)
     bio = models.TextField(blank=True)
     notes = models.TextField(blank=True, help_text='Internal admin notes')
@@ -205,3 +211,71 @@ class HostProfile(models.Model):
 
     def __str__(self):
         return f'{self.company_name} ({self.user.email})'
+
+
+class ApplicationLog(models.Model):
+    """Audit trail for every action taken on a host application."""
+
+    class Action(models.TextChoices):
+        APPROVED = 'approved', _('Approved')
+        REJECTED = 'rejected', _('Rejected')
+        LINK_RESENT = 'link_resent', _('Password Link Resent')
+        PASSWORD_SET = 'password_set', _('Password Set')
+        NOTE_ADDED = 'note_added', _('Note Added')
+        STATUS_CHANGED = 'status_changed', _('Status Changed')
+
+    application = models.ForeignKey(
+        HostProfile, on_delete=models.CASCADE, related_name='logs',
+    )
+    action = models.CharField(max_length=20, choices=Action.choices)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='application_logs',
+    )
+    note = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Application Log'
+        verbose_name_plural = 'Application Logs'
+
+    def __str__(self):
+        return f'{self.get_action_display()} — {self.application} by {self.actor}'
+
+
+class ApplicationPermission(models.Model):
+    """
+    Granular permissions for host application management.
+    Hierarchy: manage > review > view.
+    - view: can see applications list
+    - review: can approve / reject
+    - manage: full control (permissions, settings)
+    Superusers bypass this entirely.
+    """
+
+    class Permission(models.TextChoices):
+        VIEW = 'view', _('View Applications')
+        REVIEW = 'review', _('Review (Approve / Reject)')
+        MANAGE = 'manage', _('Full Management')
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='application_permissions',
+    )
+    permission = models.CharField(max_length=20, choices=Permission.choices)
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='granted_application_permissions',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'permission')
+        verbose_name = 'Application Permission'
+        verbose_name_plural = 'Application Permissions'
+
+    def __str__(self):
+        return f'{self.user.email} — {self.get_permission_display()}'
