@@ -19,6 +19,13 @@ interface Host {
   approved_at: string | null;
 }
 
+const UNITS_RANGE_LABELS: Record<number, string> = {
+  10: "1–10", 25: "11–25", 50: "26–50", 100: "51–100", 250: "101–250", 500: "250+",
+};
+function unitsRangeLabel(n: number): string {
+  return UNITS_RANGE_LABELS[n] ?? String(n);
+}
+
 export default function AtRiskHostsPage() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +185,7 @@ export default function AtRiskHostsPage() {
                         {host.num_properties}
                       </span>
                       <span className="text-xs text-gray-400 ml-1">
-                        ({host.num_units} units)
+                        ({unitsRangeLabel(host.num_units)} units)
                       </span>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">

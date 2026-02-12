@@ -66,9 +66,19 @@ interface AuthState {
   setTokens: (access: string, refresh: string) => void;
 }
 
+function loadJson<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  hostProfile: null,
+  user: loadJson<User>("user_data"),
+  hostProfile: loadJson<HostProfile>("host_profile_data"),
   accessToken: typeof window !== "undefined" ? localStorage.getItem("access_token") : null,
   refreshToken: typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null,
   isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("access_token") : false,
@@ -76,6 +86,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: ({ user, host_profile, access, refresh }) => {
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
+    localStorage.setItem("user_data", JSON.stringify(user));
+    if (host_profile) {
+      localStorage.setItem("host_profile_data", JSON.stringify(host_profile));
+    }
     set({
       user,
       hostProfile: host_profile ?? null,
@@ -88,6 +102,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_data");
+    localStorage.removeItem("host_profile_data");
     set({
       user: null,
       hostProfile: null,

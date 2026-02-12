@@ -212,6 +212,7 @@ class HostProfileUpdateSerializer(serializers.ModelSerializer):
         model = HostProfile
         fields = [
             'company_name',
+            'property_type',
             'phone',
             'business_type',
             'legal_business_name',

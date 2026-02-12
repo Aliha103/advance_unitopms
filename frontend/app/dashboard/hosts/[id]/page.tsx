@@ -134,6 +134,20 @@ const LOG_ACTION_STYLES: Record<string, { color: string; bg: string }> = {
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
+const UNITS_RANGE_LABELS: Record<number, string> = {
+  10: "1–10", 25: "11–25", 50: "26–50", 100: "51–100", 250: "101–250", 500: "250+",
+};
+function unitsRangeLabel(n: number): string {
+  return UNITS_RANGE_LABELS[n] ?? String(n);
+}
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  hotel: "Hotel", boutique_hotel: "Boutique Hotel", resort: "Resort", motel: "Motel",
+  hostel: "Hostel", "bed_&_breakfast": "Bed & Breakfast", vacation_rental: "Vacation Rental",
+  serviced_apartment: "Serviced Apartment", "apart-hotel": "Apart-Hotel", villa: "Villa",
+  guesthouse: "Guesthouse", lodge: "Lodge", other: "Other",
+};
+
 const STATUS_STYLES: Record<string, string> = {
   pending_review: "bg-amber-50 text-amber-700 border-amber-200",
   approved: "bg-blue-50 text-blue-700 border-blue-200",
@@ -144,28 +158,16 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const FIELD_LABELS: Record<string, string> = {
-  company_name: "Company Name",
-  country: "Country",
-  phone: "Phone",
-  property_type: "Property Type",
-  business_type: "Business Type",
-  legal_business_name: "Legal Business Name",
-  tax_id: "Tax ID",
-  billing_email: "Billing Email",
-  address_line_1: "Address Line 1",
-  city: "City",
-  state_province: "State / Province",
-  postal_code: "Postal Code",
-  business_description: "Description",
-  bio: "Bio / Tagline",
-  profile_photo: "Profile Photo",
-  website: "Website",
-  email_verified: "Email Verified",
-  phone_verified: "Phone Verified",
-  identity_verified: "Identity Verified",
-  timezone: "Timezone",
-  default_currency: "Currency",
-  preferred_language: "Language",
+  company_name: "Company Name", country: "Country", phone: "Phone",
+  property_type: "Property Type", business_type: "Business Type",
+  legal_business_name: "Legal Business Name", tax_id: "Tax ID",
+  billing_email: "Billing Email", address_line_1: "Address Line 1",
+  city: "City", state_province: "State / Province", postal_code: "Postal Code",
+  business_description: "Description", bio: "Bio / Tagline",
+  profile_photo: "Profile Photo", website: "Website",
+  email_verified: "Email Verified", phone_verified: "Phone Verified",
+  identity_verified: "Identity Verified", timezone: "Timezone",
+  default_currency: "Currency", preferred_language: "Language",
 };
 
 const SECTION_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
@@ -180,11 +182,7 @@ const SECTION_COLORS: Record<string, { bg: string; text: string; ring: string }>
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 };
 
@@ -218,14 +216,9 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
         setHost(profileData);
         setLogs(logData);
 
-        // Fetch conversations and contract (non-blocking)
+        // Fetch conversations (non-blocking)
         api.get<ConversationItem[]>(`/auth/applications/${id}/conversations/`)
           .then(setConversations)
-          .catch(() => {});
-        api.get<ContractInfo>(`/auth/applications/${id}/profile/`)
-          .then(() => {
-            // Contract is on the host profile's related contract — fetch via separate logic if available
-          })
           .catch(() => {});
       } catch (err: any) {
         setError(err.message || "Failed to load host profile.");
@@ -278,6 +271,9 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
     .toUpperCase()
     .slice(0, 2);
 
+  const locationParts = [host.city, host.state_province, host.country_name].filter(Boolean);
+  const locationStr = locationParts.length > 0 ? locationParts.join(", ") : null;
+
   return (
     <div className="p-6 max-w-7xl">
       {/* Breadcrumb */}
@@ -289,46 +285,109 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
         <span className="text-gray-900 font-medium">{host.full_name}</span>
       </div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+      {/* ── Property Overview Hero ───────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 mb-6 overflow-hidden">
+        <div className="flex items-stretch">
+          {/* Property Photo / Logo */}
+          <div className="w-40 shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center relative">
             {host.profile_photo ? (
-              <img src={host.profile_photo} alt="" className="w-14 h-14 rounded-xl object-cover" />
+              <img src={host.profile_photo} alt="" className="w-full h-full object-cover" />
             ) : (
-              initials
+              <span className="text-4xl font-bold text-white/80">{initials}</span>
             )}
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{host.full_name}</h1>
-            <p className="text-sm text-gray-500">{host.email}</p>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span
-                className={cn(
-                  "inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full border capitalize",
-                  STATUS_STYLES[host.status] || STATUS_STYLES.deactivated
+
+          {/* Property Info */}
+          <div className="flex-1 p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2.5 mb-1">
+                  <h1 className="text-xl font-bold text-gray-900">{host.company_name}</h1>
+                  <span className={cn(
+                    "inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full border capitalize",
+                    STATUS_STYLES[host.status] || STATUS_STYLES.deactivated
+                  )}>
+                    {host.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">{host.full_name} &middot; {host.email}</p>
+                {locationStr && (
+                  <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    {locationStr}
+                  </p>
                 )}
+              </div>
+              <button
+                onClick={() => router.push("/dashboard/hosts")}
+                className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
               >
-                {host.status.replace(/_/g, " ")}
-              </span>
-              <span className="inline-flex px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                {host.onboarding_step.replace(/_/g, " ")}
-              </span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Back
+              </button>
+            </div>
+
+            {/* Property Quick Facts */}
+            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Type</p>
+                <p className="text-sm font-semibold text-gray-900 capitalize">
+                  {PROPERTY_TYPE_LABELS[host.property_type] || host.property_type?.replace(/_/g, " ") || "—"}
+                </p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Properties</p>
+                <p className="text-sm font-semibold text-gray-900">{host.num_properties}</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Units</p>
+                <p className="text-sm font-semibold text-gray-900">{unitsRangeLabel(host.num_units)}</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Currency</p>
+                <p className="text-sm font-semibold text-gray-900">{host.default_currency}</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Since</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {new Date(host.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                </p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Profile</p>
+                <p className={cn(
+                  "text-sm font-semibold",
+                  comp.overall_percentage >= 80 ? "text-green-600" : comp.overall_percentage >= 50 ? "text-amber-600" : "text-red-500"
+                )}>
+                  {comp.overall_percentage}%
+                </p>
+              </div>
             </div>
           </div>
         </div>
-        <button
-          onClick={() => router.push("/dashboard/hosts")}
-          className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-          Back
-        </button>
       </div>
 
-      {/* Profile Completeness */}
+      {/* ── Property Stats ───────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <StatCard label="Total Revenue" value="—" sub="No data yet" icon="revenue" />
+        <StatCard label="Avg Monthly" value="—" sub="Revenue" icon="calendar" />
+        <StatCard label="Total Bookings" value="—" sub="No data yet" icon="bookings" />
+        <StatCard label="Avg Stay" value="—" sub="Length (nights)" icon="stay" />
+        <StatCard label="Rating" value="—" sub="No reviews" icon="rating" />
+        <StatCard label="Occupancy" value="—" sub="Rate" icon="occupancy" />
+      </div>
+
+      {/* ── Profile Completeness (collapsible) ───────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900">Profile Completeness</h2>
@@ -365,27 +424,15 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
                 >
                   <p className="text-xs font-medium text-gray-700 mb-1">{section.label}</p>
                   <div className="flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "text-xs font-bold",
-                        section.percentage === 100
-                          ? "text-green-600"
-                          : section.percentage > 0
-                          ? "text-amber-600"
-                          : "text-red-500"
-                      )}
-                    >
+                    <span className={cn(
+                      "text-xs font-bold",
+                      section.percentage === 100 ? "text-green-600" : section.percentage > 0 ? "text-amber-600" : "text-red-500"
+                    )}>
                       {section.completed}/{section.total}
                     </span>
                     <svg
-                      className={cn(
-                        "w-3.5 h-3.5 text-gray-400 transition-transform",
-                        isExpanded && "rotate-180"
-                      )}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
+                      className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", isExpanded && "rotate-180")}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                     </svg>
@@ -417,7 +464,7 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Two-column layout */}
+      {/* ── Two-column layout ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* LEFT COLUMN */}
         <div className="lg:col-span-3 space-y-6">
@@ -427,9 +474,9 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
               <Field label="Company" value={host.company_name} />
               <Field label="Country" value={host.country_name} />
               <Field label="Phone" value={host.phone} />
-              <Field label="Property Type" value={host.property_type?.replace(/_/g, " ")} />
+              <Field label="Property Type" value={PROPERTY_TYPE_LABELS[host.property_type] || host.property_type?.replace(/_/g, " ")} />
               <Field label="Properties" value={host.num_properties} />
-              <Field label="Units" value={host.num_units} />
+              <Field label="Units" value={unitsRangeLabel(host.num_units)} />
               <Field label="Referral Source" value={host.referral_source?.replace(/_/g, " ")} />
               <Field label="Marketing Opt-in" value={host.marketing_opt_in ? "Yes" : "No"} />
             </FieldGrid>
@@ -465,18 +512,39 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
             </FieldGrid>
           </DetailCard>
 
-          {/* Content */}
-          <DetailCard title="Content & Branding">
-            {host.profile_photo && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-400 mb-2">Profile Photo</p>
+          {/* Gallery & Branding */}
+          <DetailCard title="Gallery & Branding">
+            {/* Logo / Profile Photo */}
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-500 mb-2">Property Logo / Photo</p>
+              {host.profile_photo ? (
                 <img
                   src={host.profile_photo}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-xl object-cover border border-gray-200"
+                  alt="Property"
+                  className="w-24 h-24 rounded-xl object-cover border border-gray-200"
                 />
+              ) : (
+                <div className="w-24 h-24 rounded-xl bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {/* Gallery placeholder */}
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-500 mb-2">Property Photos</p>
+              <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                <p className="text-sm text-gray-400">No photos uploaded yet</p>
+                <p className="text-xs text-gray-300 mt-1">Gallery photos will appear here once uploaded by the host</p>
               </div>
-            )}
+            </div>
+
+            {/* Bio & Description */}
             <FieldGrid>
               <Field label="Bio / Tagline" value={host.bio} />
               <Field label="Website" value={host.website} />
@@ -547,7 +615,7 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
           {/* Subscription */}
           <DetailCard title="Subscription">
             <div className="space-y-3">
-              <Field label="Plan" value={host.subscription_plan} />
+              <Field label="Plan" value={host.subscription_plan?.replace(/_/g, " ")} />
               <Field label="Status" value={host.subscription_status} />
               <Field label="Trial Ends" value={formatDate(host.trial_ends_at)} />
               <Field label="Billing Email" value={host.billing_email} />
@@ -679,6 +747,30 @@ function VerifyField({ label, verified }: { label: string; verified: boolean }) 
           Pending
         </span>
       )}
+    </div>
+  );
+}
+
+const STAT_ICONS: Record<string, string> = {
+  revenue: "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  calendar: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",
+  bookings: "M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z",
+  stay: "M21 12a9 9 0 11-18 0 9 9 0 0118 0z M12 6v6h4.5",
+  rating: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
+  occupancy: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
+};
+
+function StatCard({ label, value, sub, icon }: { label: string; value: string; sub: string; icon: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d={STAT_ICONS[icon] || STAT_ICONS.revenue} />
+        </svg>
+        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+      </div>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
+      <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
     </div>
   );
 }

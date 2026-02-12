@@ -21,6 +21,13 @@ interface Host {
   profile_completeness_pct: number;
 }
 
+const UNITS_RANGE_LABELS: Record<number, string> = {
+  10: "1–10", 25: "11–25", 50: "26–50", 100: "51–100", 250: "101–250", 500: "250+",
+};
+function unitsRangeLabel(n: number): string {
+  return UNITS_RANGE_LABELS[n] ?? String(n);
+}
+
 const STATUS_STYLES: Record<string, string> = {
   pending_review: "bg-amber-50 text-amber-700 border-amber-200",
   approved: "bg-blue-50 text-blue-700 border-blue-200",
@@ -318,7 +325,7 @@ function HostsDirectoryContent() {
                         {host.num_properties}
                       </span>
                       <span className="text-xs text-gray-400 ml-1">
-                        ({host.num_units} units)
+                        ({unitsRangeLabel(host.num_units)} units)
                       </span>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
