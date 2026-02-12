@@ -21,6 +21,17 @@ from .views import (
     NotificationMarkReadView,
     NotificationMarkAllReadView,
     AdminSubscriptionUpdateView,
+    ContractTemplateView,
+    ContractStatusView,
+    ContractSignView,
+    CancellationRequestView,
+    ContractDataExportView,
+    ConversationListView,
+    ConversationDetailView,
+    ConversationCreateView,
+    MessageSendView,
+    ConversationCloseView,
+    HostConversationsView,
 )
 
 urlpatterns = [
@@ -53,4 +64,20 @@ urlpatterns = [
     re_path(r'^notifications/unread-count/?$', NotificationUnreadCountView.as_view(), name='notification-unread-count'),
     re_path(r'^notifications/read-all/?$', NotificationMarkAllReadView.as_view(), name='notification-read-all'),
     re_path(r'^notifications/(?P<pk>\d+)/read/?$', NotificationMarkReadView.as_view(), name='notification-mark-read'),
+
+    # Contract
+    re_path(r'^contract-template/?$', ContractTemplateView.as_view(), name='contract-template'),
+    re_path(r'^contract/?$', ContractStatusView.as_view(), name='contract-status'),
+    re_path(r'^contract/sign/?$', ContractSignView.as_view(), name='contract-sign'),
+    re_path(r'^contract/cancel/?$', CancellationRequestView.as_view(), name='contract-cancel'),
+    re_path(r'^contract/export/?$', ContractDataExportView.as_view(), name='contract-export'),
+
+    # Messaging
+    re_path(r'^conversations/?$', ConversationListView.as_view(), name='conversation-list'),
+    re_path(r'^conversations/(?P<pk>\d+)/?$', ConversationDetailView.as_view(), name='conversation-detail'),
+    re_path(r'^conversations/(?P<pk>\d+)/messages/?$', MessageSendView.as_view(), name='conversation-send-message'),
+    re_path(r'^conversations/(?P<pk>\d+)/close/?$', ConversationCloseView.as_view(), name='conversation-close'),
+
+    # Admin: host-specific conversations
+    re_path(r'^applications/(?P<pk>\d+)/conversations/?$', HostConversationsView.as_view(), name='host-conversations'),
 ]

@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -10,7 +13,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import HostProfile, ApplicationLog, ApplicationPermission, Notification
+from .models import (
+    HostProfile, ApplicationLog, ApplicationPermission, Notification,
+    ContractTemplate, ServiceContract, Conversation, Message,
+)
 from .serializers import (
     HostApplicationSerializer,
     HostApplicationListSerializer,
@@ -25,6 +31,14 @@ from .serializers import (
     SubscriptionStatusSerializer,
     NotificationSerializer,
     AdminSubscriptionUpdateSerializer,
+    ContractTemplateSerializer,
+    ServiceContractSerializer,
+    ContractSignSerializer,
+    CancellationRequestSerializer,
+    ConversationListSerializer,
+    ConversationDetailSerializer,
+    SendMessageSerializer,
+    CreateConversationSerializer,
 )
 from .permissions import (
     CanViewApplications,
@@ -612,3 +626,492 @@ class AdminSubscriptionUpdateView(APIView):
             'message': 'Subscription updated.',
             'changes': changes,
         })
+
+
+# ── Contract endpoints ─────────────────────────────────────────────────────
+
+
+class ContractTemplateView(APIView):
+    """
+    GET /api/auth/contract-template/
+    Returns the currently active contract template.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        template = ContractTemplate.objects.filter(is_active=True).first()
+        if not template:
+            return Response(
+                {'message': 'No active contract template found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(ContractTemplateSerializer(template).data)
+
+
+class ContractStatusView(APIView):
+    """
+    GET /api/auth/contract/
+    Returns the host's own contract status.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_host or not hasattr(request.user, 'host_profile'):
+            return Response(
+                {'message': 'Not a host user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        profile = request.user.host_profile
+        try:
+            contract = profile.contract
+        except ServiceContract.DoesNotExist:
+            return Response({'status': 'no_contract'})
+        return Response(ServiceContractSerializer(contract).data)
+
+
+class ContractSignView(APIView):
+    """
+    POST /api/auth/contract/sign/
+    Host signs the active contract template.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.is_host or not hasattr(request.user, 'host_profile'):
+            return Response(
+                {'message': 'Not a host user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ContractSignSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        profile = request.user.host_profile
+        template = ContractTemplate.objects.filter(is_active=True).first()
+        if not template:
+            return Response(
+                {'message': 'No active contract template.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Create or update contract
+        contract, created = ServiceContract.objects.get_or_create(
+            host_profile=profile,
+            defaults={
+                'version': template.version,
+                'status': ServiceContract.Status.ACTIVE,
+                'signed_at': timezone.now(),
+                'service_start_date': timezone.now().date(),
+            },
+        )
+
+        if not created:
+            if contract.status != ServiceContract.Status.PENDING:
+                return Response(
+                    {'message': 'Contract already signed.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            contract.version = template.version
+            contract.status = ServiceContract.Status.ACTIVE
+            contract.signed_at = timezone.now()
+            contract.service_start_date = timezone.now().date()
+            contract.save(update_fields=[
+                'version', 'status', 'signed_at', 'service_start_date', 'updated_at',
+            ])
+
+        # Audit log
+        create_application_log(
+            application=profile,
+            action=ApplicationLog.Action.CONTRACT_SIGNED,
+            actor=request.user,
+            request=request,
+            note=f'Signed contract v{template.version}',
+        )
+
+        # In-app notification
+        Notification.objects.create(
+            user=request.user,
+            category=Notification.Category.SYSTEM,
+            title='Contract Signed',
+            message='You have successfully signed the UnitoPMS service agreement.',
+            action_url='/dashboard/contract',
+        )
+
+        return Response(ServiceContractSerializer(contract).data, status=status.HTTP_200_OK)
+
+
+class CancellationRequestView(APIView):
+    """
+    POST /api/auth/contract/cancel/
+    Host requests cancellation. Service ends after 2-month notice period.
+    Read-only access for 365 days after service end.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.is_host or not hasattr(request.user, 'host_profile'):
+            return Response(
+                {'message': 'Not a host user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        profile = request.user.host_profile
+        try:
+            contract = profile.contract
+        except ServiceContract.DoesNotExist:
+            return Response(
+                {'message': 'No contract found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if contract.status != ServiceContract.Status.ACTIVE:
+            return Response(
+                {'message': f'Cannot cancel — contract status is {contract.status}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = CancellationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        now = timezone.now()
+        notice_months = contract.cancellation_notice_months
+        # Compute service end date (now + 2 months)
+        service_end = (now + timedelta(days=notice_months * 30)).date()
+        read_only_until = service_end + timedelta(days=365)
+
+        contract.status = ServiceContract.Status.CANCELLATION_REQUESTED
+        contract.cancellation_requested_at = now
+        contract.service_end_date = service_end
+        contract.read_only_access_until = read_only_until
+        contract.save(update_fields=[
+            'status', 'cancellation_requested_at', 'service_end_date',
+            'read_only_access_until', 'updated_at',
+        ])
+
+        # Audit log
+        reason = serializer.validated_data.get('cancellation_reason', '')
+        create_application_log(
+            application=profile,
+            action=ApplicationLog.Action.CANCELLATION_REQUESTED,
+            actor=request.user,
+            request=request,
+            note=f'Cancellation requested. Service ends {service_end}. '
+                 f'Read-only until {read_only_until}. Reason: {reason or "N/A"}',
+        )
+
+        # Notification
+        Notification.objects.create(
+            user=request.user,
+            category=Notification.Category.SUBSCRIPTION,
+            title='Cancellation Requested',
+            message=(
+                f'Your cancellation has been received. Service will end on {service_end}. '
+                f'You will have read-only access until {read_only_until}.'
+            ),
+            action_url='/dashboard/contract',
+        )
+
+        # Send cancellation confirmation email
+        try:
+            from django.core.mail import send_mail
+            from django.template.loader import render_to_string
+
+            html = render_to_string('emails/cancellation_confirmed.html', {
+                'host_name': request.user.full_name or profile.company_name,
+                'company_name': profile.company_name,
+                'service_end_date': service_end,
+                'read_only_until': read_only_until,
+                'frontend_url': getattr(django_settings, 'FRONTEND_URL', 'https://unitopms.com'),
+            })
+            send_mail(
+                subject='Cancellation Confirmed — UnitoPMS',
+                message='',
+                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[request.user.email],
+                html_message=html,
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+        return Response(ServiceContractSerializer(contract).data)
+
+
+class ContractDataExportView(APIView):
+    """
+    GET /api/auth/contract/export/
+    Host downloads all their data as JSON.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_host or not hasattr(request.user, 'host_profile'):
+            return Response(
+                {'message': 'Not a host user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        profile = request.user.host_profile
+        user = request.user
+
+        # Build export data
+        data = {
+            'user': {
+                'email': user.email,
+                'full_name': user.full_name,
+            },
+            'profile': {
+                'company_name': profile.company_name,
+                'country': profile.country,
+                'phone': profile.phone,
+                'property_type': profile.property_type,
+                'num_properties': profile.num_properties,
+                'num_units': profile.num_units,
+                'business_type': profile.business_type,
+                'address': f'{profile.address_line_1}, {profile.city}, {profile.state_province} {profile.postal_code}'.strip(', '),
+                'subscription_plan': profile.subscription_plan,
+                'subscription_status': profile.subscription_status,
+                'created_at': str(profile.created_at),
+            },
+            'notifications': list(
+                Notification.objects.filter(user=user).values(
+                    'title', 'message', 'category', 'created_at',
+                )[:200]
+            ),
+            'activity_logs': list(
+                ApplicationLog.objects.filter(application=profile).values(
+                    'action', 'note', 'created_at',
+                )[:200]
+            ),
+            'conversations': [],
+        }
+
+        # Export conversations + messages
+        for conv in Conversation.objects.filter(host=profile).prefetch_related('messages'):
+            data['conversations'].append({
+                'subject': conv.subject,
+                'status': conv.status,
+                'created_at': str(conv.created_at),
+                'messages': [
+                    {
+                        'body': msg.body,
+                        'is_from_host': msg.is_from_host,
+                        'created_at': str(msg.created_at),
+                    }
+                    for msg in conv.messages.all()
+                ],
+            })
+
+        return JsonResponse(data, json_default=str)
+
+
+# ── Messaging endpoints ────────────────────────────────────────────────────
+
+
+class ConversationListView(generics.ListAPIView):
+    """
+    GET /api/auth/conversations/
+    Host sees own conversations. Admin sees all.
+    Supports ?status=open|closed filter.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ConversationListSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            qs = Conversation.objects.select_related('host', 'host__user').all()
+        else:
+            if not hasattr(user, 'host_profile'):
+                return Conversation.objects.none()
+            qs = Conversation.objects.select_related('host', 'host__user').filter(
+                host=user.host_profile,
+            )
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+
+class ConversationDetailView(APIView):
+    """
+    GET /api/auth/conversations/<id>/
+    Returns conversation with all messages. Marks unread messages as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            conv = Conversation.objects.select_related('host', 'host__user').get(pk=pk)
+        except Conversation.DoesNotExist:
+            return Response(
+                {'message': 'Conversation not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Access check
+        user = request.user
+        if not user.is_staff:
+            if not hasattr(user, 'host_profile') or conv.host != user.host_profile:
+                return Response(
+                    {'message': 'Access denied.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        # Mark messages as read
+        if user.is_staff:
+            conv.messages.filter(is_from_host=True, is_read=False).update(is_read=True)
+        else:
+            conv.messages.filter(is_from_host=False, is_read=False).update(is_read=True)
+
+        return Response(ConversationDetailSerializer(conv, context={'request': request}).data)
+
+
+class ConversationCreateView(APIView):
+    """
+    POST /api/auth/conversations/
+    Creates a new conversation with the first message.
+    Host creates a support thread; admin can also initiate.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateConversationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        is_host = user.is_host and hasattr(user, 'host_profile')
+
+        if is_host:
+            host_profile = user.host_profile
+        elif user.is_staff:
+            # Admin must specify host_id
+            host_id = request.data.get('host_id')
+            if not host_id:
+                return Response(
+                    {'message': 'host_id required for admin-initiated conversations.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                host_profile = HostProfile.objects.get(pk=host_id)
+            except HostProfile.DoesNotExist:
+                return Response(
+                    {'message': 'Host not found.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {'message': 'Permission denied.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        conv = Conversation.objects.create(
+            host=host_profile,
+            subject=serializer.validated_data['subject'],
+        )
+
+        Message.objects.create(
+            conversation=conv,
+            sender=user,
+            body=serializer.validated_data['body'],
+            is_from_host=is_host,
+        )
+
+        return Response(
+            ConversationDetailSerializer(conv, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class MessageSendView(APIView):
+    """
+    POST /api/auth/conversations/<id>/messages/
+    Sends a message in an existing conversation.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            conv = Conversation.objects.get(pk=pk)
+        except Conversation.DoesNotExist:
+            return Response(
+                {'message': 'Conversation not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user = request.user
+        is_host = user.is_host and hasattr(user, 'host_profile')
+
+        # Access check
+        if not user.is_staff:
+            if not is_host or conv.host != user.host_profile:
+                return Response(
+                    {'message': 'Access denied.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        if conv.status == Conversation.Status.CLOSED:
+            return Response(
+                {'message': 'This conversation is closed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = SendMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        msg = Message.objects.create(
+            conversation=conv,
+            sender=user,
+            body=serializer.validated_data['body'],
+            is_from_host=is_host,
+        )
+
+        # Update last_message_at
+        conv.last_message_at = msg.created_at
+        conv.save(update_fields=['last_message_at'])
+
+        return Response(
+            ConversationDetailSerializer(conv, context={'request': request}).data,
+        )
+
+
+class ConversationCloseView(APIView):
+    """
+    POST /api/auth/conversations/<id>/close/
+    Admin closes a conversation.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_staff:
+            return Response(
+                {'message': 'Only admin can close conversations.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            conv = Conversation.objects.get(pk=pk)
+        except Conversation.DoesNotExist:
+            return Response(
+                {'message': 'Conversation not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        conv.status = Conversation.Status.CLOSED
+        conv.save(update_fields=['status'])
+
+        return Response({'message': 'Conversation closed.'})
+
+
+class HostConversationsView(generics.ListAPIView):
+    """
+    GET /api/auth/applications/<pk>/conversations/
+    Admin views a specific host's conversations.
+    """
+    permission_classes = [CanViewApplications]
+    serializer_class = ConversationListSerializer
+
+    def get_queryset(self):
+        return Conversation.objects.select_related('host', 'host__user').filter(
+            host_id=self.kwargs['pk'],
+        )

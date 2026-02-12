@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import CustomUser, HostProfile, Notification
+from .models import (
+    CustomUser, HostProfile, Notification,
+    ContractTemplate, ServiceContract, Conversation, Message,
+)
 
 
 @admin.register(CustomUser)
@@ -97,4 +100,43 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('title', 'user', 'category', 'is_read', 'created_at')
     list_filter = ('category', 'is_read')
     search_fields = ('title', 'user__email')
+    readonly_fields = ('created_at',)
+
+
+@admin.register(ContractTemplate)
+class ContractTemplateAdmin(admin.ModelAdmin):
+    list_display = ('title', 'version', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'version')
+    readonly_fields = ('created_at',)
+
+
+@admin.register(ServiceContract)
+class ServiceContractAdmin(admin.ModelAdmin):
+    list_display = ('host_profile', 'version', 'status', 'signed_at', 'service_end_date', 'read_only_access_until')
+    list_filter = ('status',)
+    search_fields = ('host_profile__company_name', 'host_profile__user__email')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+class MessageInline(admin.TabularInline):
+    model = Message
+    extra = 0
+    readonly_fields = ('sender', 'body', 'is_from_host', 'is_read', 'created_at')
+
+
+@admin.register(Conversation)
+class ConversationAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'host', 'status', 'last_message_at', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('subject', 'host__company_name', 'host__user__email')
+    readonly_fields = ('created_at', 'last_message_at')
+    inlines = [MessageInline]
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('conversation', 'sender', 'is_from_host', 'is_read', 'created_at')
+    list_filter = ('is_from_host', 'is_read')
+    search_fields = ('body', 'conversation__subject')
     readonly_fields = ('created_at',)

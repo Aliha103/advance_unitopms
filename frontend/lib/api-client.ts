@@ -33,6 +33,8 @@ const LOCKDOWN_ALLOWED = [
   '/auth/notifications',
   '/auth/token/refresh',
   '/auth/profile',
+  '/auth/contract',
+  '/auth/conversations',
 ];
 
 function isEndpointAllowedWhenLocked(endpoint: string): boolean {

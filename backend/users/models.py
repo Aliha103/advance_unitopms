@@ -258,11 +258,17 @@ class ApplicationLog(models.Model):
         PASSWORD_SET = 'password_set', _('Password Set')
         NOTE_ADDED = 'note_added', _('Note Added')
         STATUS_CHANGED = 'status_changed', _('Status Changed')
+        CONTRACT_SIGNED = 'contract_signed', _('Contract Signed')
+        CANCELLATION_REQUESTED = 'cancellation_requested', _('Cancellation Requested')
+        SUBSCRIPTION_PAID = 'subscription_paid', _('Subscription Paid')
+        EMAIL_SENT = 'email_sent', _('Email Sent')
+        SERVICE_ENDED = 'service_ended', _('Service Ended')
+        ACCESS_EXPIRED = 'access_expired', _('Access Expired')
 
     application = models.ForeignKey(
         HostProfile, on_delete=models.CASCADE, related_name='logs',
     )
-    action = models.CharField(max_length=20, choices=Action.choices)
+    action = models.CharField(max_length=30, choices=Action.choices)
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='application_logs',
@@ -345,3 +351,126 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.title} — {self.user.email}'
+
+
+class ContractTemplate(models.Model):
+    """Global service agreement template. Only one active at a time."""
+
+    version = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=255)
+    body = models.TextField(help_text='HTML/Markdown contract text')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Contract Template'
+        verbose_name_plural = 'Contract Templates'
+
+    def __str__(self):
+        return f'{self.title} v{self.version}'
+
+
+class ServiceContract(models.Model):
+    """Tracks a host's signed service agreement and cancellation lifecycle."""
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending Signature')
+        ACTIVE = 'active', _('Active')
+        CANCELLATION_REQUESTED = 'cancellation_requested', _('Cancellation Requested')
+        CANCELLED = 'cancelled', _('Cancelled')
+        EXPIRED = 'expired', _('Expired')
+
+    host_profile = models.OneToOneField(
+        HostProfile, on_delete=models.CASCADE, related_name='contract',
+    )
+    version = models.CharField(max_length=20)
+    signed_at = models.DateTimeField(null=True, blank=True)
+    service_start_date = models.DateField(null=True, blank=True)
+    cancellation_requested_at = models.DateTimeField(null=True, blank=True)
+    cancellation_notice_months = models.PositiveIntegerField(default=2)
+    service_end_date = models.DateField(
+        null=True, blank=True,
+        help_text='Computed: cancellation_requested_at + notice period',
+    )
+    read_only_access_until = models.DateField(
+        null=True, blank=True,
+        help_text='service_end_date + 365 days',
+    )
+    status = models.CharField(
+        max_length=30, choices=Status.choices, default=Status.PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Service Contract'
+        verbose_name_plural = 'Service Contracts'
+
+    @property
+    def days_until_service_end(self):
+        if not self.service_end_date:
+            return None
+        delta = self.service_end_date - timezone.now().date()
+        return max(0, delta.days)
+
+    @property
+    def days_until_access_expires(self):
+        if not self.read_only_access_until:
+            return None
+        delta = self.read_only_access_until - timezone.now().date()
+        return max(0, delta.days)
+
+    def __str__(self):
+        return f'Contract v{self.version} — {self.host_profile}'
+
+
+class Conversation(models.Model):
+    """Threaded conversation between a host and UnitoPMS admin."""
+
+    class Status(models.TextChoices):
+        OPEN = 'open', _('Open')
+        CLOSED = 'closed', _('Closed')
+
+    host = models.ForeignKey(
+        HostProfile, on_delete=models.CASCADE, related_name='conversations',
+    )
+    subject = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.OPEN,
+    )
+    last_message_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-last_message_at']
+        verbose_name = 'Conversation'
+        verbose_name_plural = 'Conversations'
+
+    def __str__(self):
+        return f'{self.subject} — {self.host}'
+
+
+class Message(models.Model):
+    """Single message within a conversation."""
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name='messages',
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name='sent_messages',
+    )
+    body = models.TextField()
+    is_from_host = models.BooleanField(default=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Message'
+        verbose_name_plural = 'Messages'
+
+    def __str__(self):
+        origin = 'Host' if self.is_from_host else 'Admin'
+        return f'{origin} message in {self.conversation.subject}'

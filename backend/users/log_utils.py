@@ -19,3 +19,13 @@ def create_application_log(application, action, actor=None, request=None, note='
         ip_address=get_client_ip(request) if request else None,
         metadata=metadata or {},
     )
+
+
+def log_email_sent(profile, subject, recipient):
+    """Log an email send event to the application audit trail."""
+    return create_application_log(
+        application=profile,
+        action=ApplicationLog.Action.EMAIL_SENT,
+        actor=None,
+        note=f'Email sent: "{subject}" to {recipient}',
+    )

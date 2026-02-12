@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSubscriptionStore } from "@/stores/subscription-store";
+import { useContractStore } from "@/stores/contract-store";
 
 export function SubscriptionBanner() {
   const status = useSubscriptionStore((s) => s.subscriptionStatus);
@@ -9,7 +10,64 @@ export function SubscriptionBanner() {
   const isExpired = useSubscriptionStore((s) => s.isTrialExpired);
   const loaded = useSubscriptionStore((s) => s.loaded);
 
+  const contractStatus = useContractStore((s) => s.contractStatus);
+  const contract = useContractStore((s) => s.contract);
+
   if (!loaded) return null;
+
+  // Cancellation requested — amber banner with countdown
+  if (contractStatus === "cancellation_requested" && contract?.service_end_date) {
+    return (
+      <div
+        className="w-full px-4 py-2.5 flex items-center justify-center gap-2 text-[13px] font-medium text-white shrink-0"
+        style={{ background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)" }}
+      >
+        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>
+          Service ends on <strong>{new Date(contract.service_end_date).toLocaleDateString()}</strong>.
+          {contract.days_until_service_end !== null && contract.days_until_service_end > 0 && (
+            <> {contract.days_until_service_end} days remaining.</>
+          )}
+        </span>
+        <Link
+          href="/dashboard/contract"
+          className="ml-1 underline underline-offset-2 hover:opacity-90 font-semibold"
+        >
+          View details
+        </Link>
+      </div>
+    );
+  }
+
+  // Cancelled contract with read-only access — gray banner
+  if (contractStatus === "cancelled" && contract?.read_only_access_until) {
+    return (
+      <div
+        className="w-full px-4 py-2.5 flex items-center justify-center gap-2 text-[13px] font-medium text-white shrink-0"
+        style={{ background: "linear-gradient(135deg, #4b5563 0%, #6b7280 100%)" }}
+      >
+        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>
+          Read-only access.
+          {contract.days_until_access_expires !== null && contract.days_until_access_expires > 0 && (
+            <> <strong>{contract.days_until_access_expires} days</strong> remaining.</>
+          )}
+          {" "}Download your data before access expires.
+        </span>
+        <Link
+          href="/dashboard/contract"
+          className="ml-1 underline underline-offset-2 hover:opacity-90 font-semibold"
+        >
+          Download data
+        </Link>
+      </div>
+    );
+  }
 
   // Active / paused users don't see a banner
   if (status === "active" || status === "paused") return null;

@@ -177,6 +177,18 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'users.send_payment_failure_reminders',
         'schedule': 604800.0,  # Weekly
     },
+    'check-service-end-dates': {
+        'task': 'users.check_service_end_dates',
+        'schedule': 86400.0,  # Daily
+    },
+    'check-read-only-access-expiry': {
+        'task': 'users.check_read_only_access_expiry',
+        'schedule': 86400.0,  # Daily
+    },
+    'send-access-expiry-warnings': {
+        'task': 'users.send_access_expiry_warnings',
+        'schedule': 86400.0,  # Daily
+    },
 }
 
 # Email Configuration

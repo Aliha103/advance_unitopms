@@ -93,6 +93,45 @@ interface LogEntry {
   created_at: string;
 }
 
+interface ConversationItem {
+  id: number;
+  subject: string;
+  status: string;
+  host_company: string;
+  host_email: string;
+  last_message_at: string;
+  unread_count: number;
+  last_message_preview: string;
+  created_at: string;
+}
+
+interface ContractInfo {
+  id: number;
+  version: string;
+  status: string;
+  signed_at: string | null;
+  service_start_date: string | null;
+  service_end_date: string | null;
+  read_only_access_until: string | null;
+  days_until_service_end: number | null;
+  days_until_access_expires: number | null;
+}
+
+const LOG_ACTION_STYLES: Record<string, { color: string; bg: string }> = {
+  approved: { color: "text-green-500", bg: "bg-green-400" },
+  rejected: { color: "text-red-500", bg: "bg-red-400" },
+  link_resent: { color: "text-blue-500", bg: "bg-blue-400" },
+  password_set: { color: "text-teal-500", bg: "bg-teal-400" },
+  note_added: { color: "text-gray-500", bg: "bg-gray-400" },
+  status_changed: { color: "text-amber-500", bg: "bg-amber-400" },
+  contract_signed: { color: "text-green-500", bg: "bg-green-400" },
+  cancellation_requested: { color: "text-amber-500", bg: "bg-amber-400" },
+  subscription_paid: { color: "text-green-500", bg: "bg-green-400" },
+  email_sent: { color: "text-blue-500", bg: "bg-blue-400" },
+  service_ended: { color: "text-gray-500", bg: "bg-gray-400" },
+  access_expired: { color: "text-red-500", bg: "bg-red-400" },
+};
+
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
 const STATUS_STYLES: Record<string, string> = {
@@ -162,6 +201,8 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const [host, setHost] = useState<HostDetail | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [contractInfo, setContractInfo] = useState<ContractInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -176,6 +217,16 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
         ]);
         setHost(profileData);
         setLogs(logData);
+
+        // Fetch conversations and contract (non-blocking)
+        api.get<ConversationItem[]>(`/auth/applications/${id}/conversations/`)
+          .then(setConversations)
+          .catch(() => {});
+        api.get<ContractInfo>(`/auth/applications/${id}/profile/`)
+          .then(() => {
+            // Contract is on the host profile's related contract — fetch via separate logic if available
+          })
+          .catch(() => {});
       } catch (err: any) {
         setError(err.message || "Failed to load host profile.");
       } finally {
@@ -511,22 +562,68 @@ export default function HostDetailPage({ params }: { params: Promise<{ id: strin
             </DetailCard>
           )}
 
+          {/* Messages */}
+          <DetailCard title="Messages">
+            {conversations.length === 0 ? (
+              <p className="text-sm text-gray-400">No conversations yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {conversations.slice(0, 5).map((conv) => (
+                  <Link
+                    key={conv.id}
+                    href={`/dashboard/inbox?conversation=${conv.id}`}
+                    className="block p-2.5 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 truncate">{conv.subject}</p>
+                      {conv.unread_count > 0 && (
+                        <span className="ml-2 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                          {conv.unread_count}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{conv.last_message_preview}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={cn(
+                        "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                        conv.status === "open" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
+                      )}>
+                        {conv.status}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {formatDate(conv.last_message_at)}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+                {conversations.length > 5 && (
+                  <p className="text-xs text-gray-400 text-center pt-1">
+                    +{conversations.length - 5} more conversations
+                  </p>
+                )}
+              </div>
+            )}
+          </DetailCard>
+
           {/* Activity Log */}
           {logs.length > 0 && (
             <DetailCard title="Activity Log">
               <div className="space-y-3">
-                {logs.map((log) => (
-                  <div key={log.id} className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-teal-400 mt-1.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{log.action_display}</p>
-                      {log.note && <p className="text-xs text-gray-500 mt-0.5">{log.note}</p>}
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {log.actor_name} &middot; {formatDate(log.created_at)}
-                      </p>
+                {logs.map((log) => {
+                  const style = LOG_ACTION_STYLES[log.action] || { color: "text-teal-500", bg: "bg-teal-400" };
+                  return (
+                    <div key={log.id} className="flex gap-3">
+                      <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", style.bg)} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{log.action_display}</p>
+                        {log.note && <p className="text-xs text-gray-500 mt-0.5">{log.note}</p>}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {log.actor_name} &middot; {formatDate(log.created_at)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </DetailCard>
           )}

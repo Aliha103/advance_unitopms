@@ -3,7 +3,10 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework import serializers
 
-from .models import HostProfile, ApplicationLog, ApplicationPermission, Notification
+from .models import (
+    HostProfile, ApplicationLog, ApplicationPermission, Notification,
+    ContractTemplate, ServiceContract, Conversation, Message,
+)
 
 User = get_user_model()
 
@@ -470,3 +473,123 @@ class AdminSubscriptionUpdateSerializer(serializers.Serializer):
         choices=HostProfile.SubscriptionStatus.choices, required=False,
     )
     trial_ends_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+# ── Contract serializers ─────────────────────────────────────
+
+class ContractTemplateSerializer(serializers.ModelSerializer):
+    """Read-only: returns the active contract template."""
+
+    class Meta:
+        model = ContractTemplate
+        fields = ['id', 'version', 'title', 'body', 'created_at']
+        read_only_fields = fields
+
+
+class ServiceContractSerializer(serializers.ModelSerializer):
+    """Read-only: host's own contract status with computed countdown fields."""
+    days_until_service_end = serializers.IntegerField(read_only=True)
+    days_until_access_expires = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ServiceContract
+        fields = [
+            'id', 'version', 'status', 'signed_at', 'service_start_date',
+            'cancellation_requested_at', 'cancellation_notice_months',
+            'service_end_date', 'read_only_access_until',
+            'days_until_service_end', 'days_until_access_expires',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class ContractSignSerializer(serializers.Serializer):
+    """Validates the host clicking 'I Agree'."""
+    agreement = serializers.BooleanField()
+
+    def validate_agreement(self, value):
+        if not value:
+            raise serializers.ValidationError('You must agree to the contract.')
+        return value
+
+
+class CancellationRequestSerializer(serializers.Serializer):
+    """Validates cancellation request with optional reason."""
+    cancellation_reason = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+# ── Messaging serializers ────────────────────────────────────
+
+class MessageSerializer(serializers.ModelSerializer):
+    """Read-only message within a conversation."""
+    sender_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Message
+        fields = [
+            'id', 'body', 'is_from_host', 'sender_name',
+            'is_read', 'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_sender_name(self, obj):
+        if obj.sender:
+            return obj.sender.full_name or obj.sender.email
+        return 'System'
+
+
+class ConversationListSerializer(serializers.ModelSerializer):
+    """Conversation list item with unread count and host info."""
+    unread_count = serializers.SerializerMethodField()
+    host_company = serializers.CharField(source='host.company_name', read_only=True)
+    host_email = serializers.EmailField(source='host.user.email', read_only=True)
+    last_message_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = [
+            'id', 'subject', 'status', 'host_company', 'host_email',
+            'last_message_at', 'unread_count', 'last_message_preview',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_unread_count(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return 0
+        if request.user.is_staff:
+            return obj.messages.filter(is_from_host=True, is_read=False).count()
+        return obj.messages.filter(is_from_host=False, is_read=False).count()
+
+    def get_last_message_preview(self, obj):
+        last = obj.messages.order_by('-created_at').first()
+        if last:
+            return last.body[:100]
+        return ''
+
+
+class ConversationDetailSerializer(serializers.ModelSerializer):
+    """Full conversation with messages list."""
+    messages = MessageSerializer(many=True, read_only=True)
+    host_company = serializers.CharField(source='host.company_name', read_only=True)
+    host_email = serializers.EmailField(source='host.user.email', read_only=True)
+
+    class Meta:
+        model = Conversation
+        fields = [
+            'id', 'subject', 'status', 'host_company', 'host_email',
+            'last_message_at', 'messages', 'created_at',
+        ]
+        read_only_fields = fields
+
+
+class SendMessageSerializer(serializers.Serializer):
+    """Validates sending a message in an existing conversation."""
+    body = serializers.CharField()
+
+
+class CreateConversationSerializer(serializers.Serializer):
+    """Validates creating a new conversation with first message."""
+    subject = serializers.CharField(max_length=255)
+    body = serializers.CharField()

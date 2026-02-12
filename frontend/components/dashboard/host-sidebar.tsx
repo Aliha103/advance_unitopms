@@ -38,6 +38,8 @@ const ICONS: Record<string, string> = {
   propertyInfo: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
   profile: "M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z",
   subscription: "M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z",
+  contract: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  messages: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
 };
 
 function SidebarIcon({ name, className }: { name: string; className?: string }) {
@@ -154,6 +156,7 @@ export function HostSidebar() {
           <div className="flex flex-col gap-0.5">
             <HostNavItem href={u("")} icon="grid" label="Dashboard" exact isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("profile")} icon="profile" label="My Profile" isCollapsed={isCollapsed} pathname={pathname} />
+            <HostNavItem href={u("inbox")} icon="messages" label="Messages" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("calendar")} icon="calendar" label="Calendar" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("guests")} icon="users" label="Guests" isCollapsed={isCollapsed} pathname={pathname} />
           </div>
@@ -195,7 +198,9 @@ export function HostSidebar() {
 
         {/* ===== SETTINGS ===== */}
         <div className="mb-4">
+          <SectionHeader label="Settings" isCollapsed={isCollapsed} />
           <div className="flex flex-col gap-0.5">
+            <HostNavItem href={u("contract")} icon="contract" label="Contract" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("subscription")} icon="subscription" label="Subscription" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("settings")} icon="settings" label="Settings" isCollapsed={isCollapsed} pathname={pathname} />
           </div>
