@@ -14,6 +14,8 @@ interface Application {
   property_type: string;
   num_properties: number;
   num_units: number;
+  referral_source: string;
+  marketing_opt_in: boolean;
   status: string;
   rejection_reason: string;
   created_at: string;
@@ -24,6 +26,41 @@ interface Application {
   rejected_by_name: string;
   rejected_by_email: string;
 }
+
+// Maps stored upper-bound values back to the range labels used in the registration form
+const PROPERTIES_RANGE_LABELS: Record<number, string> = {
+  1: "1 property",
+  5: "2–5 properties",
+  10: "6–10 properties",
+  25: "11–25 properties",
+  50: "26–50 properties",
+  100: "50+ properties",
+};
+const UNITS_RANGE_LABELS: Record<number, string> = {
+  10: "1–10 units",
+  25: "11–25 units",
+  50: "26–50 units",
+  100: "51–100 units",
+  250: "101–250 units",
+  500: "250+ units",
+};
+function propertiesLabel(n: number): string {
+  return PROPERTIES_RANGE_LABELS[n] || `${n} properties`;
+}
+function unitsLabel(n: number): string {
+  return UNITS_RANGE_LABELS[n] || `${n} units`;
+}
+
+const REFERRAL_LABELS: Record<string, string> = {
+  google_search: "Google Search",
+  "referral_/_word_of_mouth": "Referral / Word of Mouth",
+  linkedin: "LinkedIn",
+  "facebook_/_instagram": "Facebook / Instagram",
+  "conference_/_trade_show": "Conference / Trade Show",
+  "blog_/_article": "Blog / Article",
+  channel_partner: "Channel Partner",
+  other: "Other",
+};
 
 interface LogEntry {
   id: number;
@@ -518,7 +555,7 @@ export default function ApplicationsPage() {
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
                       <span className="text-sm text-gray-700">
-                        {app.num_properties} properties, {app.num_units} units
+                        {propertiesLabel(app.num_properties)}, {unitsLabel(app.num_units)}
                       </span>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
@@ -664,8 +701,8 @@ export default function ApplicationsPage() {
                   <div>
                     <p className="text-gray-400 mb-0.5">Portfolio</p>
                     <p className="text-gray-700 font-medium">
-                      {detailDrawer.app.num_properties} props /{" "}
-                      {detailDrawer.app.num_units} units
+                      {propertiesLabel(detailDrawer.app.num_properties)} /{" "}
+                      {unitsLabel(detailDrawer.app.num_units)}
                     </p>
                   </div>
                   <div>
@@ -678,6 +715,18 @@ export default function ApplicationsPage() {
                     <p className="text-gray-400 mb-0.5">Applied</p>
                     <p className="text-gray-700 font-medium">
                       {formatDate(detailDrawer.app.created_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 mb-0.5">Referral Source</p>
+                    <p className="text-gray-700 font-medium">
+                      {REFERRAL_LABELS[detailDrawer.app.referral_source] || detailDrawer.app.referral_source?.replace(/_/g, " ") || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 mb-0.5">Marketing Opt-in</p>
+                    <p className={cn("font-medium", detailDrawer.app.marketing_opt_in ? "text-green-600" : "text-gray-500")}>
+                      {detailDrawer.app.marketing_opt_in ? "Yes" : "No"}
                     </p>
                   </div>
                 </div>

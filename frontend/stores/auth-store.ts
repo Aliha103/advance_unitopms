@@ -18,6 +18,8 @@ interface HostProfile {
   property_type: string;
   num_properties: number;
   num_units: number;
+  referral_source: string;
+  marketing_opt_in: boolean;
 }
 
 interface AuthState {

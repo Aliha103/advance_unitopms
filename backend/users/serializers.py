@@ -90,6 +90,8 @@ class HostProfileSerializer(serializers.ModelSerializer):
             'timezone',
             'default_currency',
             'preferred_language',
+            'referral_source',
+            'marketing_opt_in',
             'email_verified',
             'phone_verified',
             'profile_photo',

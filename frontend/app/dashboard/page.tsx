@@ -37,6 +37,20 @@ const UNIT_LABEL: Record<PropertyCategory, string> = {
   apartment: "Apartments",
 };
 
+// Maps stored upper-bound values back to the range labels used in the registration form
+const UNITS_RANGE_LABELS: Record<number, string> = {
+  10: "1–10",
+  25: "11–25",
+  50: "26–50",
+  100: "51–100",
+  250: "101–250",
+  500: "250+",
+};
+function unitsRangeLabel(n: number, unitWord: string): string {
+  const range = UNITS_RANGE_LABELS[n];
+  return range ? `${range} ${unitWord.toLowerCase()}` : `${n} ${unitWord.toLowerCase()}`;
+}
+
 // ── SVG helpers ──────────────────────────────────────────────────────────────
 
 function Icon({ d, className }: { d: string; className?: string }) {
@@ -206,7 +220,7 @@ function HostDashboard({
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {hostProfile.company_name} &middot; {typeLabel} &middot;{" "}
-          {hostProfile.num_units} {unitLabel.toLowerCase()}
+          {unitsRangeLabel(hostProfile.num_units, unitLabel)}
         </p>
       </div>
 
@@ -329,7 +343,7 @@ function HostDashboard({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">{unitLabel}</span>
-              <span className="text-sm font-medium text-gray-900">{hostProfile.num_units}</span>
+              <span className="text-sm font-medium text-gray-900">{unitsRangeLabel(hostProfile.num_units, unitLabel)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Plan</span>
