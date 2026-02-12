@@ -194,7 +194,7 @@ function HostDashboard({
   const setupSteps = [
     { label: "Account created", done: true },
     { label: "Password set", done: hostProfile.status === "active" || currentStep >= 1 },
-    { label: "Complete property info", done: currentStep >= 2, href: "/dashboard/inventory" },
+    { label: "Complete property info", done: currentStep >= 2, href: "/dashboard/property" },
     { label: "Connect an OTA channel", done: currentStep >= 3, href: "/dashboard/channels" },
     { label: "Create your first booking", done: currentStep >= 4, href: "/dashboard/bookings" },
   ];
@@ -332,7 +332,7 @@ function HostDashboard({
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Property Overview</h2>
-            <Link href="/dashboard/inventory" className="text-xs font-medium text-teal-600 hover:text-teal-500">
+            <Link href="/dashboard/property" className="text-xs font-medium text-teal-600 hover:text-teal-500">
               Manage
             </Link>
           </div>

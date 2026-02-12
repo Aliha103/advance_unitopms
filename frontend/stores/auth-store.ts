@@ -20,6 +20,34 @@ interface HostProfile {
   num_units: number;
   referral_source: string;
   marketing_opt_in: boolean;
+  // Profile fields returned by HostProfileSerializer
+  email?: string;
+  full_name?: string;
+  country?: string;
+  country_name?: string;
+  phone?: string;
+  timezone?: string;
+  default_currency?: string;
+  preferred_language?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  profile_photo?: string;
+  bio?: string;
+  created_at?: string;
+  // Business fields (editable post-onboarding)
+  business_type?: string;
+  legal_business_name?: string;
+  tax_id?: string;
+  vat_number?: string;
+  website?: string;
+  business_description?: string;
+  billing_email?: string;
+  // Address fields
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state_province?: string;
+  postal_code?: string;
 }
 
 interface AuthState {
