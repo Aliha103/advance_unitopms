@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .managers import CustomUserManager
@@ -209,6 +210,40 @@ class HostProfile(models.Model):
         verbose_name_plural = 'Host Profiles'
         ordering = ['-created_at']
 
+    # ── Computed properties ───────────────────────────────────
+
+    @property
+    def is_trial_expired(self):
+        if self.subscription_status != self.SubscriptionStatus.TRIALING:
+            return False
+        if not self.trial_ends_at:
+            return False
+        return timezone.now() >= self.trial_ends_at
+
+    @property
+    def trial_days_remaining(self):
+        if self.subscription_status != self.SubscriptionStatus.TRIALING or not self.trial_ends_at:
+            return 0
+        delta = self.trial_ends_at - timezone.now()
+        return max(0, delta.days)
+
+    @property
+    def is_portal_locked(self):
+        """Portal locked when trial expired OR payment past_due/cancelled."""
+        if self.subscription_status == self.SubscriptionStatus.TRIALING and self.is_trial_expired:
+            return True
+        return self.subscription_status in (
+            self.SubscriptionStatus.PAST_DUE,
+            self.SubscriptionStatus.CANCELLED,
+        )
+
+    @property
+    def max_ota_connections(self):
+        """Trial users can connect max 2 OTAs."""
+        if self.subscription_status == self.SubscriptionStatus.TRIALING:
+            return 2
+        return 99
+
     def __str__(self):
         return f'{self.company_name} ({self.user.email})'
 
@@ -279,3 +314,34 @@ class ApplicationPermission(models.Model):
 
     def __str__(self):
         return f'{self.user.email} — {self.get_permission_display()}'
+
+
+class Notification(models.Model):
+    """In-app notifications for hosts and staff."""
+
+    class Category(models.TextChoices):
+        SUBSCRIPTION = 'subscription', _('Subscription')
+        PAYMENT = 'payment', _('Payment')
+        SYSTEM = 'system', _('System')
+        INFO = 'info', _('Info')
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    category = models.CharField(
+        max_length=20, choices=Category.choices, default=Category.INFO,
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    action_url = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+
+    def __str__(self):
+        return f'{self.title} — {self.user.email}'

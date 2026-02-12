@@ -36,6 +36,8 @@ const ICONS: Record<string, string> = {
   alloggiati: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
   appUsers: "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z",
   propertyInfo: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  profile: "M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z",
+  subscription: "M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z",
 };
 
 function SidebarIcon({ name, className }: { name: string; className?: string }) {
@@ -151,6 +153,7 @@ export function HostSidebar() {
           <SectionHeader label="Overview" isCollapsed={isCollapsed} />
           <div className="flex flex-col gap-0.5">
             <HostNavItem href={u("")} icon="grid" label="Dashboard" exact isCollapsed={isCollapsed} pathname={pathname} />
+            <HostNavItem href={u("profile")} icon="profile" label="My Profile" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("calendar")} icon="calendar" label="Calendar" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("guests")} icon="users" label="Guests" isCollapsed={isCollapsed} pathname={pathname} />
           </div>
@@ -193,6 +196,7 @@ export function HostSidebar() {
         {/* ===== SETTINGS ===== */}
         <div className="mb-4">
           <div className="flex flex-col gap-0.5">
+            <HostNavItem href={u("subscription")} icon="subscription" label="Subscription" isCollapsed={isCollapsed} pathname={pathname} />
             <HostNavItem href={u("settings")} icon="settings" label="Settings" isCollapsed={isCollapsed} pathname={pathname} />
           </div>
         </div>

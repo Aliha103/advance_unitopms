@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser, HostProfile
+from .models import CustomUser, HostProfile, Notification
 
 
 @admin.register(CustomUser)
@@ -90,3 +90,11 @@ class HostProfileAdmin(admin.ModelAdmin):
     @admin.display(description='Email')
     def user_email(self, obj):
         return obj.user.email
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'user', 'category', 'is_read', 'created_at')
+    list_filter = ('category', 'is_read')
+    search_fields = ('title', 'user__email')
+    readonly_fields = ('created_at',)

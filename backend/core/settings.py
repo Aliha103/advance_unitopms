@@ -45,7 +45,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -163,9 +163,30 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_BEAT_SCHEDULE = {
     'daily-database-backup': {
         'task': 'core.backup_database',
-        'schedule': 86400.0,  # Every 24 hours (seconds)
+        'schedule': 86400.0,  # Every 24 hours
+    },
+    'check-trial-expirations': {
+        'task': 'users.check_trial_expirations',
+        'schedule': 86400.0,  # Daily
+    },
+    'send-trial-expiring-warnings': {
+        'task': 'users.send_trial_expiring_warnings',
+        'schedule': 86400.0,  # Daily
+    },
+    'send-payment-failure-reminders': {
+        'task': 'users.send_payment_failure_reminders',
+        'schedule': 604800.0,  # Weekly
     },
 }
+
+# Email Configuration
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'UnitoPMS <noreply@unitopms.com>')
 
 # Logging
 LOGGING = {

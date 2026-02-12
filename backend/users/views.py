@@ -10,17 +10,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import HostProfile, ApplicationLog, ApplicationPermission
+from .models import HostProfile, ApplicationLog, ApplicationPermission, Notification
 from .serializers import (
     HostApplicationSerializer,
     HostApplicationListSerializer,
     HostProfileSerializer,
     HostProfileUpdateSerializer,
+    HostProfileDetailSerializer,
     RejectApplicationSerializer,
     SetPasswordSerializer,
     ApplicationLogSerializer,
     ApplicationPermissionSerializer,
     GrantPermissionSerializer,
+    SubscriptionStatusSerializer,
+    NotificationSerializer,
+    AdminSubscriptionUpdateSerializer,
 )
 from .permissions import (
     CanViewApplications,
@@ -358,6 +362,20 @@ class ApplicationLogListView(generics.ListAPIView):
         )
 
 
+class HostProfileDetailView(generics.RetrieveAPIView):
+    """
+    GET /api/auth/applications/<id>/profile/
+    Staff with 'view' permission. Returns full host profile with completeness data.
+    """
+    permission_classes = [CanViewApplications]
+    serializer_class = HostProfileDetailSerializer
+
+    def get_queryset(self):
+        return HostProfile.objects.select_related(
+            'user', 'approved_by', 'rejected_by'
+        )
+
+
 # ── Application Permissions Management ──────────────────────────────────────
 
 
@@ -439,3 +457,158 @@ class StaffListView(generics.ListAPIView):
             'id', 'email', 'full_name'
         ).order_by('email')
         return Response(list(staff))
+
+
+# ── Subscription & Notifications ───────────────────────────────────────────
+
+
+class SubscriptionStatusView(APIView):
+    """
+    GET /api/auth/subscription-status/
+    Returns subscription info + lockdown state for the logged-in host.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_host or not hasattr(request.user, 'host_profile'):
+            return Response(
+                {'message': 'Not a host user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        profile = request.user.host_profile
+        data = SubscriptionStatusSerializer({
+            'subscription_plan': profile.subscription_plan,
+            'subscription_status': profile.subscription_status,
+            'trial_ends_at': profile.trial_ends_at,
+            'trial_days_remaining': profile.trial_days_remaining,
+            'is_trial_expired': profile.is_trial_expired,
+            'is_portal_locked': profile.is_portal_locked,
+            'max_ota_connections': profile.max_ota_connections,
+        }).data
+        return Response(data)
+
+
+class NotificationListView(generics.ListAPIView):
+    """
+    GET /api/auth/notifications/
+    Returns paginated notifications for the logged-in user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)[:50]
+
+
+class NotificationUnreadCountView(APIView):
+    """
+    GET /api/auth/notifications/unread-count/
+    Returns unread notification count.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        count = Notification.objects.filter(
+            user=request.user, is_read=False,
+        ).count()
+        return Response({'count': count})
+
+
+class NotificationMarkReadView(APIView):
+    """
+    POST /api/auth/notifications/<id>/read/
+    Marks a single notification as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(
+                {'message': 'Notification not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        notif.is_read = True
+        notif.save(update_fields=['is_read'])
+        return Response({'message': 'Marked as read.'})
+
+
+class NotificationMarkAllReadView(APIView):
+    """
+    POST /api/auth/notifications/read-all/
+    Marks all notifications as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        updated = Notification.objects.filter(
+            user=request.user, is_read=False,
+        ).update(is_read=True)
+        return Response({'message': f'Marked {updated} as read.'})
+
+
+class AdminSubscriptionUpdateView(APIView):
+    """
+    POST /api/auth/applications/<pk>/subscription/
+    Admin updates a host's subscription plan/status.
+    """
+    permission_classes = [CanManageApplications]
+
+    def post(self, request, pk):
+        try:
+            profile = HostProfile.objects.select_related('user').get(pk=pk)
+        except HostProfile.DoesNotExist:
+            return Response(
+                {'message': 'Host profile not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AdminSubscriptionUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        update_fields = ['updated_at']
+        changes = []
+
+        if 'subscription_plan' in serializer.validated_data:
+            old = profile.subscription_plan
+            profile.subscription_plan = serializer.validated_data['subscription_plan']
+            update_fields.append('subscription_plan')
+            changes.append(f'plan: {old} → {profile.subscription_plan}')
+
+        if 'subscription_status' in serializer.validated_data:
+            old = profile.subscription_status
+            profile.subscription_status = serializer.validated_data['subscription_status']
+            update_fields.append('subscription_status')
+            changes.append(f'status: {old} → {profile.subscription_status}')
+
+        if 'trial_ends_at' in serializer.validated_data:
+            profile.trial_ends_at = serializer.validated_data['trial_ends_at']
+            update_fields.append('trial_ends_at')
+            changes.append(f'trial_ends_at updated')
+
+        profile.save(update_fields=update_fields)
+
+        # Audit log
+        create_application_log(
+            application=profile,
+            action=ApplicationLog.Action.STATUS_CHANGED,
+            actor=request.user,
+            request=request,
+            note=f'Subscription updated: {", ".join(changes)}',
+        )
+
+        # Notify the host
+        Notification.objects.create(
+            user=profile.user,
+            category=Notification.Category.SUBSCRIPTION,
+            title='Subscription Updated',
+            message=f'Your subscription has been updated: {", ".join(changes)}.',
+            action_url='/dashboard/subscription',
+        )
+
+        return Response({
+            'message': 'Subscription updated.',
+            'changes': changes,
+        })

@@ -1,48 +1,61 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useNotificationStore } from "@/stores/notification-store";
 import { cn } from "@/lib/utils";
 
-// TODO: Replace with real notifications from API
-const MOCK_NOTIFICATIONS = [
-  {
-    id: "1",
-    title: "New Reservation #2929",
-    desc: "Added by John Doe just now",
-    icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-    color: "from-blue-500 to-blue-600",
-    bgColor: "bg-blue-50",
-    unread: true,
-    time: "Just now",
-  },
-  {
-    id: "2",
-    title: "Host Application Received",
-    desc: "Grand Hotel & Spa applied",
-    icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+const CATEGORY_CONFIG: Record<string, { color: string; icon: string }> = {
+  subscription: {
     color: "from-teal-500 to-emerald-500",
-    bgColor: "bg-teal-50",
-    unread: true,
-    time: "2m ago",
+    icon: "M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z",
   },
-  {
-    id: "3",
-    title: "Payment Failed",
-    desc: "Invoice #1847 — Sunset Villas",
-    icon: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",
+  payment: {
     color: "from-red-500 to-rose-500",
-    bgColor: "bg-red-50",
-    unread: false,
-    time: "1h ago",
+    icon: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",
   },
-];
+  system: {
+    color: "from-blue-500 to-blue-600",
+    icon: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.204-.107-.397.165-.71.505-.78.929l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z",
+  },
+  info: {
+    color: "from-gray-500 to-gray-600",
+    icon: "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z",
+  },
+};
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export function TopbarNotifications() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const ref = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const loaded = useNotificationStore((s) => s.loaded);
+  const fetchNotifications = useNotificationStore((s) => s.fetch);
+  const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
+  const markRead = useNotificationStore((s) => s.markRead);
+  const markAllRead = useNotificationStore((s) => s.markAllRead);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Poll unread count every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Click outside
   useEffect(() => {
@@ -63,12 +76,6 @@ export function TopbarNotifications() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
-
-  const markAllRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, unread: false }))
-    );
-  };
 
   return (
     <div className="relative" ref={ref}>
@@ -159,68 +166,79 @@ export function TopbarNotifications() {
 
         {/* Notification list */}
         <div className="max-h-[340px] overflow-y-auto px-2.5 pb-2.5">
-          {notifications.map((notif) => (
-            <div
-              key={notif.id}
-              className={cn(
-                "flex items-start gap-3.5 px-3 py-3.5 cursor-pointer rounded-xl transition-all duration-200",
-                notif.unread
-                  ? "bg-gradient-to-r from-blue-50/60 to-transparent hover:from-blue-50 hover:to-blue-25/50"
-                  : "hover:bg-gray-50/80"
-              )}
-            >
-              {/* Icon with gradient background */}
-              <div
-                className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0 text-white"
-                style={{
-                  background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                }}
-              >
-                <span className={cn("w-10 h-10 flex items-center justify-center rounded-xl shrink-0 text-white bg-gradient-to-br", notif.color)}>
-                  <svg
-                    className="w-[18px] h-[18px]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d={notif.icon}
-                    />
-                  </svg>
-                </span>
-              </div>
-              {/* Content */}
-              <div className="flex-1 min-w-0 pt-0.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-gray-900 truncate">
-                    {notif.title}
-                  </p>
-                  {notif.unread && (
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
-                        boxShadow: "0 0 6px rgba(59,130,246,0.5)",
-                      }}
-                    />
-                  )}
-                </div>
-                <p className="text-[12px] text-gray-500 mt-0.5 truncate">
-                  {notif.desc}
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
-                  {notif.time}
-                </p>
-              </div>
+          {!loaded ? (
+            <div className="py-8 text-center text-sm text-gray-400">Loading...</div>
+          ) : notifications.length === 0 ? (
+            <div className="py-8 text-center">
+              <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+              <p className="text-sm text-gray-400">No notifications yet</p>
             </div>
-          ))}
+          ) : (
+            notifications.map((notif) => {
+              const config = CATEGORY_CONFIG[notif.category] || CATEGORY_CONFIG.info;
+              return (
+                <div
+                  key={notif.id}
+                  className={cn(
+                    "flex items-start gap-3.5 px-3 py-3.5 cursor-pointer rounded-xl transition-all duration-200",
+                    !notif.is_read
+                      ? "bg-gradient-to-r from-blue-50/60 to-transparent hover:from-blue-50 hover:to-blue-25/50"
+                      : "hover:bg-gray-50/80"
+                  )}
+                  onClick={() => {
+                    if (!notif.is_read) markRead(notif.id);
+                  }}
+                >
+                  {/* Icon with gradient background */}
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0">
+                    <span className={cn("w-10 h-10 flex items-center justify-center rounded-xl shrink-0 text-white bg-gradient-to-br", config.color)}>
+                      <svg
+                        className="w-[18px] h-[18px]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d={config.icon}
+                        />
+                      </svg>
+                    </span>
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[13px] font-semibold text-gray-900 truncate">
+                        {notif.title}
+                      </p>
+                      {!notif.is_read && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{
+                            background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+                            boxShadow: "0 0 6px rgba(59,130,246,0.5)",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <p className="text-[12px] text-gray-500 mt-0.5 line-clamp-2">
+                      {notif.message}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
+                      {timeAgo(notif.created_at)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
-        {/* Footer with raised button */}
+        {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-100/80">
           <button
             type="button"

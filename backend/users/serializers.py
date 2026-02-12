@@ -3,9 +3,90 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework import serializers
 
-from .models import HostProfile, ApplicationLog, ApplicationPermission
+from .models import HostProfile, ApplicationLog, ApplicationPermission, Notification
 
 User = get_user_model()
+
+
+def compute_profile_completeness(profile):
+    """Compute profile completeness sections and overall percentage."""
+    sections = {
+        'registration': {
+            'label': 'Registration',
+            'fields': {
+                'company_name': bool(profile.company_name),
+                'country': bool(profile.country),
+                'phone': bool(profile.phone),
+                'property_type': bool(profile.property_type),
+            },
+        },
+        'business_info': {
+            'label': 'Business Information',
+            'fields': {
+                'business_type': bool(profile.business_type),
+                'legal_business_name': bool(profile.legal_business_name),
+                'tax_id': bool(profile.tax_id),
+                'billing_email': bool(profile.billing_email),
+            },
+        },
+        'address': {
+            'label': 'Property Address',
+            'fields': {
+                'address_line_1': bool(profile.address_line_1),
+                'city': bool(profile.city),
+                'state_province': bool(profile.state_province),
+                'postal_code': bool(profile.postal_code),
+            },
+        },
+        'content': {
+            'label': 'Content & Branding',
+            'fields': {
+                'business_description': bool(profile.business_description),
+                'bio': bool(profile.bio),
+                'profile_photo': bool(profile.profile_photo),
+                'website': bool(profile.website),
+            },
+        },
+        'verification': {
+            'label': 'Verification',
+            'fields': {
+                'email_verified': profile.email_verified,
+                'phone_verified': profile.phone_verified,
+                'identity_verified': profile.identity_verified,
+            },
+        },
+        'operational': {
+            'label': 'Operational Settings',
+            'fields': {
+                'timezone': profile.timezone != 'UTC',
+                'default_currency': profile.default_currency != 'USD',
+                'preferred_language': profile.preferred_language != 'en',
+            },
+        },
+    }
+
+    total_fields = 0
+    completed_fields = 0
+    for section_data in sections.values():
+        fields = section_data['fields']
+        section_total = len(fields)
+        section_completed = sum(1 for v in fields.values() if v)
+        section_data['total'] = section_total
+        section_data['completed'] = section_completed
+        section_data['percentage'] = round(
+            (section_completed / section_total * 100) if section_total else 0
+        )
+        total_fields += section_total
+        completed_fields += section_completed
+
+    return {
+        'overall_percentage': round(
+            (completed_fields / total_fields * 100) if total_fields else 0
+        ),
+        'total_fields': total_fields,
+        'completed_fields': completed_fields,
+        'sections': sections,
+    }
 
 
 class HostApplicationSerializer(serializers.Serializer):
@@ -68,6 +149,7 @@ class HostProfileSerializer(serializers.ModelSerializer):
     """Read-only serializer returned after login / profile fetch."""
     email = serializers.EmailField(source='user.email', read_only=True)
     full_name = serializers.CharField(source='user.full_name', read_only=True)
+    profile_completeness = serializers.SerializerMethodField()
 
     class Meta:
         model = HostProfile
@@ -97,8 +179,27 @@ class HostProfileSerializer(serializers.ModelSerializer):
             'profile_photo',
             'bio',
             'created_at',
+            # Business info
+            'business_type',
+            'legal_business_name',
+            'tax_id',
+            'vat_number',
+            'website',
+            'business_description',
+            'billing_email',
+            # Address
+            'address_line_1',
+            'address_line_2',
+            'city',
+            'state_province',
+            'postal_code',
+            # Completeness
+            'profile_completeness',
         ]
         read_only_fields = fields
+
+    def get_profile_completeness(self, obj):
+        return compute_profile_completeness(obj)
 
 
 class HostProfileUpdateSerializer(serializers.ModelSerializer):
@@ -145,6 +246,7 @@ class HostApplicationListSerializer(serializers.ModelSerializer):
     rejected_by_email = serializers.EmailField(
         source='rejected_by.email', read_only=True, default=''
     )
+    profile_completeness_pct = serializers.SerializerMethodField()
 
     class Meta:
         model = HostProfile
@@ -171,8 +273,74 @@ class HostApplicationListSerializer(serializers.ModelSerializer):
             'approved_at',
             'approved_by_name',
             'approved_by_email',
+            'profile_completeness_pct',
         ]
         read_only_fields = fields
+
+    def get_profile_completeness_pct(self, obj):
+        result = compute_profile_completeness(obj)
+        return result['overall_percentage']
+
+
+class HostProfileDetailSerializer(serializers.ModelSerializer):
+    """Full read-only serializer for admin host detail view."""
+    email = serializers.EmailField(source='user.email', read_only=True)
+    full_name = serializers.CharField(source='user.full_name', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+    approved_by_name = serializers.CharField(
+        source='approved_by.full_name', read_only=True, default=''
+    )
+    approved_by_email = serializers.EmailField(
+        source='approved_by.email', read_only=True, default=''
+    )
+    rejected_by_name = serializers.CharField(
+        source='rejected_by.full_name', read_only=True, default=''
+    )
+    rejected_by_email = serializers.EmailField(
+        source='rejected_by.email', read_only=True, default=''
+    )
+    profile_completeness = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HostProfile
+        fields = [
+            # User-level
+            'id', 'email', 'full_name', 'is_active',
+            # Registration
+            'company_name', 'country', 'country_name', 'phone',
+            'property_type', 'num_properties', 'num_units',
+            'referral_source', 'marketing_opt_in',
+            # Business info
+            'business_type', 'legal_business_name', 'tax_id',
+            'vat_number', 'website', 'business_description',
+            # Address
+            'address_line_1', 'address_line_2', 'city',
+            'state_province', 'postal_code',
+            # Operational
+            'timezone', 'default_currency', 'preferred_language',
+            # Verification
+            'email_verified', 'phone_verified', 'identity_verified',
+            'identity_verified_at', 'terms_accepted_at',
+            'privacy_policy_accepted_at',
+            # Subscription
+            'subscription_plan', 'subscription_status',
+            'trial_ends_at', 'billing_email', 'stripe_customer_id',
+            # Status/metadata
+            'status', 'onboarding_step', 'onboarding_completed_at',
+            'approved_at', 'approved_by_name', 'approved_by_email',
+            'suspended_at', 'suspension_reason',
+            'rejection_reason', 'rejected_at',
+            'rejected_by_name', 'rejected_by_email',
+            'profile_photo', 'bio', 'notes',
+            # Computed
+            'profile_completeness',
+            # Timestamps
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+    def get_profile_completeness(self, obj):
+        return compute_profile_completeness(obj)
 
 
 class RejectApplicationSerializer(serializers.Serializer):
@@ -268,3 +436,37 @@ class GrantPermissionSerializer(serializers.Serializer):
                 'User not found or is not a staff member.'
             )
         return value
+
+
+class SubscriptionStatusSerializer(serializers.Serializer):
+    """Read-only serializer for host subscription status endpoint."""
+    subscription_plan = serializers.CharField()
+    subscription_status = serializers.CharField()
+    trial_ends_at = serializers.DateTimeField()
+    trial_days_remaining = serializers.IntegerField()
+    is_trial_expired = serializers.BooleanField()
+    is_portal_locked = serializers.BooleanField()
+    max_ota_connections = serializers.IntegerField()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for in-app notifications."""
+
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'category', 'title', 'message',
+            'is_read', 'action_url', 'created_at',
+        ]
+        read_only_fields = fields
+
+
+class AdminSubscriptionUpdateSerializer(serializers.Serializer):
+    """Validates admin subscription update for a host."""
+    subscription_plan = serializers.ChoiceField(
+        choices=HostProfile.SubscriptionPlan.choices, required=False,
+    )
+    subscription_status = serializers.ChoiceField(
+        choices=HostProfile.SubscriptionStatus.choices, required=False,
+    )
+    trial_ends_at = serializers.DateTimeField(required=False, allow_null=True)

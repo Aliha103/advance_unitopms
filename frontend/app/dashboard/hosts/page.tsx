@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ interface Host {
   status: string;
   created_at: string;
   approved_at: string | null;
+  profile_completeness_pct: number;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -31,6 +32,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 function HostsDirectoryContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const statusFromUrl = searchParams.get("status");
 
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -98,6 +100,13 @@ function HostsDirectoryContent() {
       day: "numeric",
       year: "numeric",
     });
+
+  const avgCompleteness = hosts.length
+    ? Math.round(
+        hosts.reduce((s, h) => s + (h.profile_completeness_pct || 0), 0) /
+          hosts.length
+      )
+    : 0;
 
   return (
     <div className="p-6">
@@ -168,27 +177,37 @@ function HostsDirectoryContent() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
           {
             label: "Total Hosts",
             value: hosts.length,
+            suffix: "",
             color: "text-gray-900",
           },
           {
             label: "Active",
             value: hosts.filter((h) => h.status === "active").length,
+            suffix: "",
             color: "text-green-600",
           },
           {
             label: "Approved",
             value: hosts.filter((h) => h.status === "approved").length,
+            suffix: "",
             color: "text-blue-600",
           },
           {
             label: "Suspended",
             value: hosts.filter((h) => h.status === "suspended").length,
+            suffix: "",
             color: "text-orange-600",
+          },
+          {
+            label: "Avg. Profile",
+            value: avgCompleteness,
+            suffix: "%",
+            color: "text-indigo-600",
           },
         ].map((stat) => (
           <div
@@ -199,7 +218,7 @@ function HostsDirectoryContent() {
               {stat.label}
             </p>
             <p className={cn("text-xl font-bold mt-1", stat.color)}>
-              {stat.value}
+              {stat.value}{stat.suffix}
             </p>
           </div>
         ))}
@@ -248,6 +267,9 @@ function HostsDirectoryContent() {
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 hidden md:table-cell">
                     Joined
                   </th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
+                    Profile
+                  </th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">
                     Status
                   </th>
@@ -257,7 +279,8 @@ function HostsDirectoryContent() {
                 {filteredHosts.map((host) => (
                   <tr
                     key={host.id}
-                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/dashboard/hosts/${host.id}`)}
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -302,6 +325,27 @@ function HostsDirectoryContent() {
                       <span className="text-sm text-gray-500">
                         {formatDate(host.approved_at || host.created_at)}
                       </span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${host.profile_completeness_pct || 0}%`,
+                              background:
+                                (host.profile_completeness_pct || 0) >= 80
+                                  ? "#10b981"
+                                  : (host.profile_completeness_pct || 0) >= 50
+                                  ? "#f59e0b"
+                                  : "#ef4444",
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {host.profile_completeness_pct || 0}%
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <span

@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
+import { useSubscriptionStore } from "@/stores/subscription-store";
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { HostSidebar } from "@/components/dashboard/host-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
+import { SubscriptionBanner } from "@/components/dashboard/subscription-banner";
+import { PortalLockdownOverlay } from "@/components/dashboard/portal-lockdown-overlay";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +20,8 @@ export default function DashboardLayout({
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const isHost = user?.is_host ?? false;
+  const isPortalLocked = useSubscriptionStore((s) => s.isPortalLocked);
+  const fetchSubscription = useSubscriptionStore((s) => s.fetch);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -30,6 +35,13 @@ export default function DashboardLayout({
       router.push("/login");
     }
   }, [mounted, isAuthenticated, router]);
+
+  // Fetch subscription status for host users
+  useEffect(() => {
+    if (mounted && isAuthenticated && isHost) {
+      fetchSubscription();
+    }
+  }, [mounted, isAuthenticated, isHost, fetchSubscription]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -46,6 +58,9 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Subscription banner for hosts */}
+      {isHost && <SubscriptionBanner />}
+
       {/* Topbar — sticky, self-contained */}
       <DashboardTopbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
@@ -69,8 +84,11 @@ export default function DashboardLayout({
           {isHost ? <HostSidebar /> : <AdminSidebar />}
         </div>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* Main content with optional lockdown overlay */}
+        <div className="relative flex-1 overflow-y-auto">
+          <main>{children}</main>
+          {isHost && isPortalLocked && <PortalLockdownOverlay />}
+        </div>
       </div>
     </div>
   );
