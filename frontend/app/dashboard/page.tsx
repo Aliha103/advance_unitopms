@@ -153,35 +153,36 @@ function HostDashboard({
   // Quick actions per category
   const actionsConfig = {
     hotel: [
-      { label: "New Reservation", href: "/dashboard/reservations", icon: "M12 4v16m8-8H4", color: "teal" },
-      { label: "Walk-in Guest", href: "/dashboard/front-desk", icon: "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z", color: "blue" },
-      { label: "Housekeeping", href: "/dashboard/housekeeping", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", color: "purple" },
-      { label: "Night Audit", href: "/dashboard/night-audit", icon: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z", color: "gray" },
+      { label: "New Booking", href: "/dashboard/bookings", icon: "M12 4v16m8-8H4", color: "teal" },
+      { label: "Calendar", href: "/dashboard/calendar", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", color: "blue" },
+      { label: "Cleaning", href: "/dashboard/cleaning", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", color: "purple" },
+      { label: "OTA & Channels", href: "/dashboard/channels", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1", color: "gray" },
     ],
     rental: [
-      { label: "New Booking", href: "/dashboard/reservations", icon: "M12 4v16m8-8H4", color: "teal" },
+      { label: "New Booking", href: "/dashboard/bookings", icon: "M12 4v16m8-8H4", color: "teal" },
       { label: "Calendar", href: "/dashboard/calendar", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", color: "blue" },
-      { label: "Guest Messages", href: "/dashboard/guests", icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z", color: "purple" },
-      { label: "Channel Manager", href: "/dashboard/channels", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1", color: "gray" },
+      { label: "Reviews", href: "/dashboard/reviews", icon: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z", color: "purple" },
+      { label: "OTA & Channels", href: "/dashboard/channels", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1", color: "gray" },
     ],
     apartment: [
-      { label: "New Reservation", href: "/dashboard/reservations", icon: "M12 4v16m8-8H4", color: "teal" },
+      { label: "New Booking", href: "/dashboard/bookings", icon: "M12 4v16m8-8H4", color: "teal" },
       { label: "Manage Tenants", href: "/dashboard/guests", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z", color: "blue" },
-      { label: "Housekeeping", href: "/dashboard/housekeeping", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", color: "purple" },
-      { label: "Billing", href: "/dashboard/billing", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z", color: "gray" },
+      { label: "Cleaning", href: "/dashboard/cleaning", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", color: "purple" },
+      { label: "OTA & Channels", href: "/dashboard/channels", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1", color: "gray" },
     ],
   };
 
   const quickActions = actionsConfig[category];
 
-  // Setup steps
+  // Setup steps — single property onboarding flow
+  const onboardingOrder = ["registered", "email_verified", "profile_completed", "property_added", "payment_configured", "onboarding_complete"];
+  const currentStep = onboardingOrder.indexOf(hostProfile.onboarding_step);
   const setupSteps = [
     { label: "Account created", done: true },
-    { label: "Password set", done: hostProfile.status === "active" },
-    { label: "Add your first property", done: false, href: "/dashboard/properties" },
-    { label: "Set up room types & rates", done: false, href: category === "hotel" ? "/dashboard/properties" : undefined },
-    { label: "Connect a channel (OTA)", done: false, href: "/dashboard/channels" },
-    { label: "Create your first reservation", done: false, href: "/dashboard/reservations" },
+    { label: "Password set", done: hostProfile.status === "active" || currentStep >= 1 },
+    { label: "Complete property info", done: currentStep >= 2, href: "/dashboard/inventory" },
+    { label: "Connect an OTA channel", done: currentStep >= 3, href: "/dashboard/channels" },
+    { label: "Create your first booking", done: currentStep >= 4, href: "/dashboard/bookings" },
   ];
 
   const completedSteps = setupSteps.filter((s) => s.done).length;
@@ -205,7 +206,6 @@ function HostDashboard({
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {hostProfile.company_name} &middot; {typeLabel} &middot;{" "}
-          {hostProfile.num_properties} {hostProfile.num_properties === 1 ? "property" : "properties"} &middot;{" "}
           {hostProfile.num_units} {unitLabel.toLowerCase()}
         </p>
       </div>
@@ -318,7 +318,7 @@ function HostDashboard({
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Property Overview</h2>
-            <Link href="/dashboard/properties" className="text-xs font-medium text-teal-600 hover:text-teal-500">
+            <Link href="/dashboard/inventory" className="text-xs font-medium text-teal-600 hover:text-teal-500">
               Manage
             </Link>
           </div>
@@ -326,10 +326,6 @@ function HostDashboard({
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Property Type</span>
               <span className="text-sm font-medium text-gray-900">{typeLabel}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Properties</span>
-              <span className="text-sm font-medium text-gray-900">{hostProfile.num_properties}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">{unitLabel}</span>
