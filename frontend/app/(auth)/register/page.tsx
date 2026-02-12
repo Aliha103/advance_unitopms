@@ -282,45 +282,45 @@ export default function RegisterPage() {
             {step === 3 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Property Type <span className="text-red-500">*</span></label>
                   <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white">
                     <option value="" disabled>Select property type</option>
                     {["Hotel","Boutique Hotel","Resort","Motel","Hostel","Bed & Breakfast","Vacation Rental","Serviced Apartment","Apart-Hotel","Villa","Guesthouse","Lodge","Other"].map((t) => <option key={t} value={t.toLowerCase().replace(/ /g,"_")}>{t}</option>)}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Number of Properties</label>
-                    <select value={numProperties} onChange={(e) => setNumProperties(e.target.value)} className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white">
-                      <option value="" disabled>Select</option>
-                      {[
-                        { label: "1 property", value: 1 },
-                        { label: "2–5", value: 5 },
-                        { label: "6–10", value: 10 },
-                        { label: "11–25", value: 25 },
-                        { label: "26–50", value: 50 },
-                        { label: "50+", value: 100 },
-                      ].map(({ label, value }) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Rooms / Units</label>
-                    <select value={numUnits} onChange={(e) => setNumUnits(e.target.value)} className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white">
-                      <option value="" disabled>Select</option>
-                      {[
-                        { label: "1–10 units", value: 10 },
-                        { label: "11–25 units", value: 25 },
-                        { label: "26–50 units", value: 50 },
-                        { label: "51–100 units", value: 100 },
-                        { label: "101–250 units", value: 250 },
-                        { label: "250+ units", value: 500 },
-                      ].map(({ label, value }) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Properties <span className="text-red-500">*</span></label>
+                  <select value={numProperties} onChange={(e) => setNumProperties(e.target.value)} className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white">
+                    <option value="" disabled>Select</option>
+                    {[
+                      { label: "1 property", value: 1 },
+                      { label: "2–5", value: 5 },
+                      { label: "6–10", value: 10 },
+                      { label: "11–25", value: 25 },
+                      { label: "26–50", value: 50 },
+                      { label: "50+", value: 100 },
+                    ].map(({ label, value }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">How many separate properties do you manage?</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Rooms / Units <span className="text-red-500">*</span></label>
+                  <select value={numUnits} onChange={(e) => setNumUnits(e.target.value)} className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white">
+                    <option value="" disabled>Select</option>
+                    {[
+                      { label: "1–10 units", value: 10 },
+                      { label: "11–25 units", value: 25 },
+                      { label: "26–50 units", value: 50 },
+                      { label: "51–100 units", value: 100 },
+                      { label: "101–250 units", value: 250 },
+                      { label: "250+ units", value: 500 },
+                    ].map(({ label, value }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Total bookable units across all properties. A full apartment listed as one unit on OTAs = 1 unit. Individual rooms listed separately = count each room.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">How did you hear about us?</label>
