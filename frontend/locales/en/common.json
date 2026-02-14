@@ -1,0 +1,56 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "bookings": "Bookings",
+    "calendar": "Calendar",
+    "guests": "Guests",
+    "inbox": "Inbox",
+    "revenue": "Revenue",
+    "analytics": "Analytics",
+    "documents": "Documents",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout",
+    "search_placeholder": "Search...",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "archived": "Archived"
+    },
+    "sidebar": {
+        "overview": "Overview",
+        "operations": "Operations",
+        "property": "Property",
+        "finance": "Finance",
+        "analytics": "Analytics",
+        "cleaning": "Cleaning",
+        "reviews": "Reviews",
+        "team": "Team",
+        "gallery": "Gallery",
+        "inventory": "Inventory",
+        "maintenance": "Maintenance",
+        "staff": "Staff",
+        "payments": "Payments",
+        "invoices": "Invoices",
+        "expenses": "Expenses",
+        "pricing": "Pricing",
+        "contract": "Contract",
+        "subscription": "Subscription",
+        "reports": "Reports",
+        "forecasting": "Forecasting",
+        "channels": "Channels",
+        "alloggiati": "Alloggiati",
+        "app_users": "App Users"
+    },
+    "actions": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "download": "Download"
+    }
+  }
+}

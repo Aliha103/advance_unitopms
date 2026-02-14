@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TopbarSearch } from "./topbar-search";
 import { TopbarNotifications } from "./topbar-notifications";
 import { TopbarProfile } from "./topbar-profile";
+import { TopbarLanguageSwitcher } from "./topbar-language-switcher";
 
 // ── Main Component ──────────────────────────────────────────────────────────
 
@@ -96,6 +97,9 @@ export function DashboardTopbar({
                 />
               </svg>
             </button>
+
+            {/* Language Switcher */}
+            <TopbarLanguageSwitcher />
 
             {/* Notifications */}
             <TopbarNotifications />

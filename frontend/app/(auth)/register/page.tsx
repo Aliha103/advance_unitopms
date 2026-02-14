@@ -333,7 +333,7 @@ export default function RegisterPage() {
                   <div className="flex items-start">
                     <input type="checkbox" id="terms" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                     <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                      I agree to the <a href="/terms" className="text-teal-600 hover:text-teal-500 font-medium">Terms of Service</a> and <a href="/privacy" className="text-teal-600 hover:text-teal-500 font-medium">Privacy Policy</a>
+                      I agree to the <Link href="/legal/service-agreement" className="text-teal-600 hover:text-teal-500 font-medium" target="_blank">Master Service Agreement</Link> and <Link href="/legal/service-agreement#dpa" className="text-teal-600 hover:text-teal-500 font-medium">Data Processing Agreement</Link>
                     </label>
                   </div>
                   <div className="flex items-start">

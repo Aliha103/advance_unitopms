@@ -10,6 +10,7 @@ import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 import { HostSidebar } from "@/components/dashboard/host-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
 import { SubscriptionBanner } from "@/components/dashboard/subscription-banner";
+import "@/lib/i18n"; // Initialize i18n
 import { PortalLockdownOverlay } from "@/components/dashboard/portal-lockdown-overlay";
 
 export default function DashboardLayout({

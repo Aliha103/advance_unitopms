@@ -1,0 +1,56 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "properties": "Proprietà",
+    "bookings": "Prenotazioni",
+    "calendar": "Calendario",
+    "guests": "Ospiti",
+    "inbox": "Messaggi",
+    "revenue": "Fatturato",
+    "analytics": "Analisi",
+    "documents": "Documenti",
+    "settings": "Impostazioni",
+    "help": "Aiuto",
+    "logout": "Esci",
+    "search_placeholder": "Cerca...",
+    "notifications": "Notifiche",
+    "profile": "Profilo",
+    "status": {
+      "active": "Attivo",
+      "pending": "In Attesa",
+      "archived": "Archiviato"
+    },
+    "sidebar": {
+        "overview": "Panoramica",
+        "operations": "Operazioni",
+        "property": "Proprietà",
+        "finance": "Finanza",
+        "analytics": "Analisi",
+        "cleaning": "Pulizie",
+        "reviews": "Recensioni",
+        "team": "Team",
+        "gallery": "Galleria",
+        "inventory": "Inventario",
+        "maintenance": "Manutenzione",
+        "staff": "Personale",
+        "payments": "Pagamenti",
+        "invoices": "Fatture",
+        "expenses": "Spese",
+        "pricing": "Prezzi",
+        "contract": "Contratto",
+        "subscription": "Abbonamento",
+        "reports": "Report",
+        "forecasting": "Previsioni",
+        "channels": "Canali OTA",
+        "alloggiati": "Alloggiati Web",
+        "app_users": "Utenti App"
+    },
+    "actions": {
+        "save": "Salva",
+        "cancel": "Annulla",
+        "delete": "Elimina",
+        "edit": "Modifica",
+        "download": "Scarica"
+    }
+  }
+}
